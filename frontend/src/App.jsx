@@ -1,24 +1,24 @@
 import React from 'react'
-import Sidebar from './components/sidebar/Sidebar'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Dashboard from './components/Dashboard/Dashboard'
+import Dashboard from './AdminPanel/Dashboard/Dashboard'
+import AdminLayout from './AdminPanel/AdminLayout'
+import PublicLayout from './Components/PublicLayout'
+import Home from './Components/HomePage/Home'
 
 function App() {
   return (
     <BrowserRouter>
-      <div className="flex">
-        {/* Sidebar fixed on the left */}
-        <div className="w-64 min-h-screen bg-white shadow-md">
-          <Sidebar />
-        </div>
+      <Routes>
+        {/* Public Routes */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
+        </Route>
 
-        {/* Main content on the right */}
-        <div className="flex-1 ">
-          <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Routes>
-        </div>
-      </div>
+        {/* Admin Routes */}
+        <Route element={<AdminLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   )
 }
