@@ -1,10 +1,11 @@
 import React from "react";
+import { Outlet } from "react-router-dom";
 
-const PublicLayout = ({ children }) => {
+const PublicLayout = () => {
   return (
     <div className="min-h-screen">
-      {/* Add header/nav if you want */}
-      {children}
+      {/* Optional: navbar/header here */}
+      <Outlet />  {/* <-- This is where Home/About/etc will render */}
     </div>
   );
 };

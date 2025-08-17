@@ -4,6 +4,9 @@ import Dashboard from './AdminPanel/Dashboard/Dashboard'
 import AdminLayout from './AdminPanel/AdminLayout'
 import PublicLayout from './Components/PublicLayout'
 import Home from './Components/HomePage/Home'
+import Landing from './Components/LandingPage/Landing'
+import Signup from './Components/SignupPage/Signup'
+import Login from './Components/Login Page/Login'
 
 function App() {
   return (
@@ -11,7 +14,9 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Landing/>} />
+           <Route path="/signup" element={<Signup/>} />
+           <Route path="/login" element={<Login/>} />
         </Route>
 
         {/* Admin Routes */}
