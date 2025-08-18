@@ -184,7 +184,7 @@ const Home = () => {
         </div>
 
         {/* Quick Actions - (keeping same as before) */}
-        <div className={`mt-16 transition-all duration-1000 delay-700 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+        {/* <div className={`mt-16 transition-all duration-1000 delay-700 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
           <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-10">
             <h3 className="text-3xl font-light text-slate-800 mb-10 text-center tracking-wide">Quick Actions</h3>
             <div className="grid md:grid-cols-4 gap-8">
@@ -206,7 +206,7 @@ const Home = () => {
               ))}
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Custom CSS */}
