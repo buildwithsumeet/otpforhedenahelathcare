@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { loginApi } from '../../Api/login.api';
 import { 
   Users, 
   Mail, 
@@ -18,6 +19,8 @@ const Login = () => {
     password: ''
   });
   
+
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -119,42 +122,38 @@ const Login = () => {
     return Object.values(newErrors).every(error => !error);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Clear previous login error
-    setLoginError('');
-    
-    if (!validateForm()) {
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    setIsLoading(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate different responses based on email
-          if (formData.email === 'test@example.com' && formData.password === 'password123') {
-            resolve('Login successful');
-          } else if (formData.email === 'blocked@example.com') {
-            reject(new Error('Account has been temporarily blocked. Please contact support.'));
-          } else {
-            reject(new Error('Invalid email or password. Please try again.'));
-          }
-        }, 2000);
-      });
-      
-      console.log('Login successful:', formData);
-      // Redirect to dashboard or handle successful login
-      
-    } catch (error) {
-      setLoginError(error.message);
-    } finally {
-      setIsLoading(false);
+  // Clear previous login error
+  setLoginError('');
+
+  if (!validateForm()) {
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const response = await loginApi(formData.email, formData.password);
+    console.log(formData)
+
+    if (response.success) {
+      // ✅ Login successful, redirect or store token
+      console.log("Login successful:", response);
+      // Example: navigate to dashboard
+      // navigate("/dashboard");
+    } else {
+      // ❌ Show error message
+      setLoginError(response.message || 'Invalid credentials');
     }
-  };
+  } catch (error) {
+    console.error("Login failed:", error);
+    setLoginError('Something went wrong. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 relative overflow-hidden">
