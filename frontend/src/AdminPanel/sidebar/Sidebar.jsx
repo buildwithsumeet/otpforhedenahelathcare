@@ -31,20 +31,20 @@ const Sidebar = ({ children }) => {
     <div className="flex">
       {/* Sidebar */}
       <div className="fixed top-0 left-0 w-64 h-screen bg-white/95 backdrop-blur-xl border-r border-indigo-200/50 flex flex-col shadow-xl">
-        {/* Logo */}
-        <div className="p-6 border-b border-indigo-100/50 bg-gradient-to-r from-indigo-50 to-cyan-50">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Users className="text-white" size={22} />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600 tracking-wide">
-                LetsConnect
-              </span>
-              <Sparkles className="text-amber-500 animate-pulse" size={18} />
-            </div>
-          </div>
-        </div>
+        
+     {/* Logo */}
+<div className="p-6 border-b border-indigo-100/50 bg-gradient-to-r from-indigo-50 to-cyan-50">
+  <div className="flex items-center justify-center gap-2">
+    <img
+      src="/logo.png"
+      alt="LetsConnect logo"
+      className="h-8 w-auto block"
+      style={{ maxHeight: "2rem" }}
+    />
+    <Sparkles className="text-amber-500 animate-pulse" size={18} />
+  </div>
+</div>
+
 
         {/* Profile */}
         <div className="p-4 border-b border-indigo-100/50 bg-gradient-to-r from-blue-50/50 to-cyan-50/50">

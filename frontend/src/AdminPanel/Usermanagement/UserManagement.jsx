@@ -146,8 +146,34 @@ const UserManagement = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      {/* Custom CSS */}
+      <style jsx>{`
+        .sticky-col {
+          position: sticky !important;
+          left: 0 !important;
+          z-index: 5;
+          background-color: #fff !important;
+          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .sticky-col-header {
+          position: sticky !important;
+          left: 0 !important;
+          z-index: 15;
+          background-color: rgb(248 250 252 / 0.8) !important;
+          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+       
+
+        .table-container {
+          max-height: 600px;
+          overflow-y: auto;
+        }
+      `}</style>
+
       {/* Content wrapper with proper padding */}
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
@@ -205,14 +231,14 @@ const UserManagement = () => {
             </div>
             {/* Actions */}
             <div className="flex flex-wrap gap-3 w-full xl:w-auto">
-              <button className="flex items-center gap-2 px-4 py-2 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+              {/* <button className="flex items-center gap-2 px-4 py-2 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                 <Download size={16} />
                 <span className="hidden sm:inline">Export</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                 <Upload size={16} />
                 <span className="hidden sm:inline">Import</span>
-              </button>
+              </button> */}
               <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white rounded-lg hover:from-indigo-600 hover:to-cyan-600 transition-all duration-200 shadow-lg">
                 <UserPlus size={16} />
                 <span className="hidden sm:inline">Add User</span>
@@ -235,88 +261,90 @@ const UserManagement = () => {
             </div>
           </div>
           
-          {/* Table content with horizontal scroll */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px]">
-              <thead className="bg-slate-50/50">
-                <tr>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[200px]">User</th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[250px]">Contact</th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[120px]">Department</th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[150px]">Role</th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[100px]">Status</th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[120px]">Last Login</th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[150px]">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {paginatedUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-indigo-50/30 transition-colors">
-                    {/* User */}
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                          {user.avatar}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-medium text-slate-800">{user.firstName} {user.lastName}</div>
-                          <div className="text-sm text-slate-500">@{user.username}</div>
-                        </div>
-                      </div>
-                    </td>
-                    {/* Contact */}
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Mail size={14} className="flex-shrink-0" />
-                          <span className="truncate">{user.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Phone size={14} className="flex-shrink-0" />
-                          <span>{user.phone}</span>
-                        </div>
-                      </div>
-                    </td>
-                    {/* Department */}
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Building size={16} className="text-slate-400 flex-shrink-0" />
-                        <span className="text-sm font-medium text-slate-700">{user.department}</span>
-                      </div>
-                    </td>
-                    {/* Role */}
-                    <td className="px-4 sm:px-6 py-4">
-                      <span className={getRoleBadge(user.role)}>{user.role}</span>
-                    </td>
-                    {/* Status */}
-                    <td className="px-4 sm:px-6 py-4">
-                      <span className={getStatusBadge(user.status)}>{user.status}</span>
-                    </td>
-                    {/* Last Login */}
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="text-sm text-slate-600">{user.lastLogin}</div>
-                    </td>
-                    {/* Actions */}
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                          <Eye size={16} />
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
-                          <MoreVertical size={16} />
-                        </button>
-                      </div>
-                    </td>
+          {/* Table content with proper scrolling */}
+          <div className="table-container scrollbar-hide">
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead className="bg-slate-50/50 sticky top-0 z-10">
+                  <tr>
+                    <th className="sticky-col-header px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[240px]">User</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[280px]">Contact</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[140px]">Department</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[160px]">Role</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[100px]">Status</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[140px]">Last Login</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[160px]">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedUsers.map(user => (
+                    <tr key={user.id} className="hover:bg-indigo-50/30 transition-colors">
+                      {/* User - Sticky Column */}
+                      <td className="sticky-col px-4 sm:px-6 py-4 w-[240px]">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                            {user.avatar}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-medium text-slate-800 text-sm">{user.firstName} {user.lastName}</div>
+                            <div className="text-xs text-slate-500">@{user.username}</div>
+                          </div>
+                        </div>
+                      </td>
+                      {/* Contact */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <Mail size={14} className="flex-shrink-0" />
+                            <span className="truncate text-xs">{user.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <Phone size={14} className="flex-shrink-0" />
+                            <span className="text-xs">{user.phone}</span>
+                          </div>
+                        </div>
+                      </td>
+                      {/* Department */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Building size={16} className="text-slate-400 flex-shrink-0" />
+                          <span className="text-sm font-medium text-slate-700">{user.department}</span>
+                        </div>
+                      </td>
+                      {/* Role */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <span className={getRoleBadge(user.role)}>{user.role}</span>
+                      </td>
+                      {/* Status */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <span className={getStatusBadge(user.status)}>{user.status}</span>
+                      </td>
+                      {/* Last Login */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="text-sm text-slate-600">{user.lastLogin}</div>
+                      </td>
+                      {/* Actions */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-1">
+                          <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                            <Eye size={16} />
+                          </button>
+                          <button className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
+                            <Edit size={16} />
+                          </button>
+                          <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                          <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+                            <MoreVertical size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           
           {/* Pagination */}
