@@ -9,10 +9,16 @@ import Signup from './Components/SignupPage/Signup'
 import Login from './Components/Login Page/Login'
 import UserManagement from './AdminPanel/Usermanagement/UserManagement'
 import SocialMediaHome from './Components/HomePage/SocialMediaHome'
+import { AuthProvider } from './ContextApi/AuthContext'
+import { UserProvider } from './ContextApi/UserContext'
+import './app.css';
 
 function App() {
   return (
     <BrowserRouter>
+    {/* <AuthProvider> */}
+    
+      <UserProvider>
       <Routes>
         {/* Public Routes */}
         <Route element={<PublicLayout />}>
@@ -28,6 +34,9 @@ function App() {
           <Route path="/users" element={<UserManagement/>} />
         </Route>
       </Routes>
+      </UserProvider>
+      {/* </AuthProvider> */}
+     
     </BrowserRouter>
   )
 }
