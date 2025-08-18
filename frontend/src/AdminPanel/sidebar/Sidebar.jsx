@@ -85,7 +85,7 @@ const Sidebar = ({ children }) => {
         {/* Logout */}
         <div className="p-4 border-t border-indigo-100/50 bg-slate-50/50">
           <Link
-            to="/logout"
+            to="/"
             className="flex items-center gap-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl px-4 py-3 w-full font-medium transition-all duration-200"
           >
             <LogOut size={20} />

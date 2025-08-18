@@ -4,7 +4,9 @@ const loginApi = (email, password) => {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password }),
+     credentials: 'include' // ✅ ADD THIS LINE - Essential for cookies!
+    
     
   })
   .then(response => response.json())

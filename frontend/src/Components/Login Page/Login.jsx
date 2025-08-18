@@ -172,8 +172,8 @@ const handleSubmit = async (e) => {
     console.log("API Response:", response);
 
     if (response.success && response.message) {
-      const { user, accessToken, refreshToken } = response.message; // <- use response.message
-      login(user, accessToken, refreshToken);
+      const { user } = response.message; // Only extract user, ignore tokens
+      login(user); // Pass only user data to login function
       navigate('/');
     } else {
       setLoginError('Invalid credentials');
@@ -185,6 +185,7 @@ const handleSubmit = async (e) => {
     setIsLoading(false);
   }
 };
+
 
 
 
@@ -338,8 +339,8 @@ const handleSubmit = async (e) => {
               </div>
 
               {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end">
+                {/* <div className="flex items-center gap-2">
                   <input
                     id="remember-me"
                     name="remember-me"
@@ -351,7 +352,7 @@ const handleSubmit = async (e) => {
                   <label htmlFor="remember-me" className="text-sm text-slate-600">
                     Remember me
                   </label>
-                </div>
+                </div> */}
                 <a 
                   href="/forgot-password" 
                   className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
