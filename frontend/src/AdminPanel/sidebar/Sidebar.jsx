@@ -10,11 +10,10 @@ import {
   History,
   Bell,
   LogOut,
-  Menu,
+  Sparkles,
 } from "lucide-react";
 
 const Sidebar = ({ children }) => {
-  const [open, setOpen] = useState(true);
   const [active, setActive] = useState("Dashboard");
 
   const menuItems = [
@@ -31,80 +30,87 @@ const Sidebar = ({ children }) => {
   return (
     <div className="flex">
       {/* Sidebar */}
-      <div
-        className={`fixed top-0 left-0 transition-all duration-300 ${
-          open ? "w-60" : "w-16"
-        } h-screen bg-white border-r border-gray-200 flex flex-col shadow-sm`}
-      >
-        {/* Logo + Toggle */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <span
-            className={`text-lg font-bold text-gray-800 tracking-wide ${
-              !open && "hidden"
-            }`}
-          >
-            LET'S CONNECT
-          </span>
-          <button
-            onClick={() => setOpen(!open)}
-            className="p-1 rounded hover:bg-gray-100"
-          >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
+      <div className="fixed top-0 left-0 w-64 h-screen bg-white/95 backdrop-blur-xl border-r border-indigo-200/50 flex flex-col shadow-xl">
+        {/* Logo */}
+        <div className="p-6 border-b border-indigo-100/50 bg-gradient-to-r from-indigo-50 to-cyan-50">
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Users className="text-white" size={22} />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600 tracking-wide">
+                LetsConnect
+              </span>
+              <Sparkles className="text-amber-500 animate-pulse" size={18} />
+            </div>
+          </div>
         </div>
 
         {/* Profile */}
-        <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-yellow-100">
-          <div className="w-10 h-10 bg-yellow-200 text-yellow-700 rounded-full flex items-center justify-center text-lg shadow-inner">
-            👤
-          </div>
-          {open && (
-            <div>
-              <p className="font-semibold text-sm text-gray-900">Sumeet Singh</p>
-              <span className="text-xs text-gray-600">sumeet@example.com</span>
+        <div className="p-4 border-b border-indigo-100/50 bg-gradient-to-r from-blue-50/50 to-cyan-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 text-white rounded-full flex items-center justify-center text-xl shadow-lg">
+              👤
             </div>
-          )}
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-slate-800">Sumeet Singh</p>
+              <span className="text-xs text-slate-600">sumeet@example.com</span>
+            </div>
+          </div>
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 py-4">
-          {menuItems.map((item, i) => (
-            <Link
-              key={i}
-              to={item.path}
-              onClick={() => setActive(item.name)}
-              className={`w-full flex items-center gap-3 px-6 py-2.5 rounded-md text-base font-medium transition-colors ${
-                active === item.name
-                  ? "bg-yellow-200 text-yellow-800 font-bold shadow"
-                  : "text-gray-700 hover:bg-yellow-50"
-              }`}
-            >
-              {item.icon}
-              {open && <span>{item.name}</span>}
-            </Link>
-          ))}
+        <nav className="flex-1 py-6 px-3 overflow-y-auto scrollbar-hide">
+          <div className="space-y-1">
+            {menuItems.map((item, i) => (
+              <Link
+                key={i}
+                to={item.path}
+                onClick={() => setActive(item.name)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  active === item.name
+                    ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg hover:shadow-xl"
+                    : "text-slate-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-cyan-50 hover:text-indigo-700"
+                }`}
+              >
+                <div className={`${active === item.name ? "text-white" : "text-slate-600"}`}>
+                  {item.icon}
+                </div>
+                <span className="truncate">{item.name}</span>
+              </Link>
+            ))}
+          </div>
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-indigo-100/50 bg-slate-50/50">
           <Link
             to="/logout"
-            className="flex items-center gap-3 text-red-500 hover:text-red-600 rounded-md px-2 py-2 w-full font-medium"
+            className="flex items-center gap-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl px-4 py-3 w-full font-medium transition-all duration-200"
           >
             <LogOut size={20} />
-            {open && <span>Logout</span>}
+            <span>Logout</span>
           </Link>
         </div>
       </div>
 
       {/* Main Content */}
-      <div
-        className={`flex-1 transition-all duration-300 ${
-          open ? "ml-60" : "ml-16"
-        } p-6`}
-      >
-        {children}
+      <div className="flex-1 ml-64 min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+        <div className="p-6">
+          {children}
+        </div>
       </div>
+
+      {/* Custom CSS for hiding scrollbar */}
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none; /* Chrome, Safari and Opera */
+        }
+      `}</style>
     </div>
   );
 };

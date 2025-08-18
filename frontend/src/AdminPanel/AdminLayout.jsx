@@ -11,7 +11,7 @@ const AdminLayout = () => {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 ">
         <Outlet />   {/* ⬅️ Child routes (Dashboard, etc.) will render here */}
       </div>
     </div>
