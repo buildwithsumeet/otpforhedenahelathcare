@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { loginApi } from '../../Api/login.api';
+import React, { useState,useContext } from 'react';
+import { loginApi } from '../../Api/loginApi';
 import { 
   Users, 
   Mail, 
@@ -12,8 +12,13 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../ContextApi/UserContext';
 
 const Login = () => {
+
+  const { login } = useUser();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -122,30 +127,56 @@ const Login = () => {
     return Object.values(newErrors).every(error => !error);
   };
 
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+
+//   // Clear previous login error
+//   setLoginError('');
+
+//   if (!validateForm()) {
+//     return;
+//   }
+
+//   setIsLoading(true);
+
+//   try {
+//     const response = await loginApi(formData.email, formData.password);
+//     console.log(formData)
+
+//     if (response.success) {
+//       // ✅ Login successful, redirect or store token
+//       console.log("Login successful:", response);
+//       // Example: navigate to dashboard
+//       // navigate("/dashboard");
+//     } else {
+//       // ❌ Show error message
+//       setLoginError(response.message || 'Invalid credentials');
+//     }
+//   } catch (error) {
+//     console.error("Login failed:", error);
+//     setLoginError('Something went wrong. Please try again.');
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
+
 const handleSubmit = async (e) => {
   e.preventDefault();
-
-  // Clear previous login error
   setLoginError('');
 
-  if (!validateForm()) {
-    return;
-  }
-
+  if (!validateForm()) return;
   setIsLoading(true);
 
   try {
     const response = await loginApi(formData.email, formData.password);
-    console.log(formData)
+    console.log("API Response:", response);
 
-    if (response.success) {
-      // ✅ Login successful, redirect or store token
-      console.log("Login successful:", response);
-      // Example: navigate to dashboard
-      // navigate("/dashboard");
+    if (response.success && response.message) {
+      const { user, accessToken, refreshToken } = response.message; // <- use response.message
+      login(user, accessToken, refreshToken);
+      navigate('/');
     } else {
-      // ❌ Show error message
-      setLoginError(response.message || 'Invalid credentials');
+      setLoginError('Invalid credentials');
     }
   } catch (error) {
     console.error("Login failed:", error);
@@ -154,6 +185,9 @@ const handleSubmit = async (e) => {
     setIsLoading(false);
   }
 };
+
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 relative overflow-hidden">
