@@ -1,22 +1,22 @@
-const logoutApi = async () => { 
-    try {
-        const response = await fetch('/api/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    localStorage.removeItem('token');
-                    window.location.href = '/';
-                    } else {
-                        console.log(data);
-                        }   
-                        } catch (error) {
-                            console.error(error);
-                            }
-                            };
+const logoutApi = () => {
+  return fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/logout`, { 
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: "include",   // ✅ must be here, not in headers
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      return data;
+    } else {
+      return { success: false, message: 'Invalid username or password' };
+    }
+  })
+  .catch(error => {
+    return { success: false, message: 'Something went wrong', error };
+  });
+};
 
-export {logoutApi}
+export { logoutApi };
