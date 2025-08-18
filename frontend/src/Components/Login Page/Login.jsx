@@ -169,7 +169,7 @@ const handleSubmit = async (e) => {
 
   try {
     const response = await loginApi(formData.email, formData.password);
-    console.log("API Response:", response);
+    // console.log("API Response:", response);
 
     if (response.success && response.message) {
       const { user } = response.message; // Only extract user, ignore tokens
@@ -179,7 +179,7 @@ const handleSubmit = async (e) => {
       setLoginError('Invalid credentials');
     }
   } catch (error) {
-    console.error("Login failed:", error);
+    // console.error("Login failed:", error);
     setLoginError('Something went wrong. Please try again.');
   } finally {
     setIsLoading(false);

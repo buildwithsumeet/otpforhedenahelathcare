@@ -136,7 +136,7 @@ const Home = () => {
             </div>
 
             {/* Stats - Made responsive */}
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 mt-8 sm:mt-10 lg:mt-12 px-4 sm:px-0">
+            {/* <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 mt-8 sm:mt-10 lg:mt-12 px-4 sm:px-0">
               {[
                 { icon: Users, label: "Connections", value: "124", color: "indigo" },
                 { icon: Calendar, label: "Events", value: "18", color: "cyan" },
@@ -159,7 +159,7 @@ const Home = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -177,7 +177,7 @@ const Home = () => {
 
         {/* Upcoming Events Grid - Made responsive */}
         <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 transition-all duration-1000 delay-500 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-          <UpcomingBirthdays upcomingBirthdays={upcomingBirthdays} />
+          {/* <UpcomingBirthdays upcomingBirthdays={upcomingBirthdays} /> */}
           <UpcomingAnniversaries upcomingAnniversaries={upcomingAnniversaries} />
         </div>
       </div>
