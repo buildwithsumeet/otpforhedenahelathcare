@@ -360,17 +360,17 @@ const Login = () => {
             </form>
 
             {/* Divider */}
-            <div className="relative my-8">
+            {/* <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-white text-slate-500">Or continue with</span>
               </div>
-            </div>
+            </div> */}
 
             {/* Social Login Buttons */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-2 gap-4">
               <button 
                 type="button"
                 className="flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200 group"
@@ -392,17 +392,17 @@ const Login = () => {
                 </svg>
                 <span className="font-medium">Facebook</span>
               </button>
-            </div>
+            </div> */}
 
             {/* Signup Link */}
-            <div className="mt-8 text-center">
+            {/* <div className="mt-8 text-center">
               <p className="text-slate-600">
                 Don't have an account?{' '}
                 <a href="/signup" className="text-indigo-600 hover:text-indigo-800 font-semibold transition-colors">
                   Create one now
                 </a>
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Additional Links */}
