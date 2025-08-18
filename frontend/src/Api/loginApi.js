@@ -1,10 +1,12 @@
 const loginApi = (email, password) => {
- return fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/login`, { 
+  return fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password }),
+     credentials: 'include' // ✅ ADD THIS LINE - Essential for cookies!
+    
     
   })
   .then(response => response.json())

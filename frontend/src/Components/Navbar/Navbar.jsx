@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Users, Menu, X, Sparkles, LogOut, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom'; // Add useNavigate import
 import { useUser } from '../../ContextApi/UserContext';
+import { logoutApi } from '../../Api/logoutApi';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,11 +14,23 @@ const Navbar = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleLogout = () => {
-    logout(); // Uncomment this - it clears user data
-    navigate('/'); // Add this - navigate to home page (guest view)
-    setIsMenuOpen(false); // Close mobile menu after logout
-  };
+  const handleLogout = async () => {
+  try {
+    const res = await logoutApi();
+
+    if (res.success) {
+      // ✅ Logout successful
+      console.log("Logged out successfully");
+      // e.g. clear local state, redirect, etc.
+      localStorage.clear();
+      window.location.href = "/login";
+    } else {
+      console.error("Logout failed:", res.message);
+    }
+  } catch (err) {
+    console.error("Error while logging out:", err);
+  }
+};
 
   // Rest of your component remains the same...
   return (
