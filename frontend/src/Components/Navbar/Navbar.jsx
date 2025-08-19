@@ -15,6 +15,7 @@ const Navbar = () => {
   };
 
   const handleLogout = async () => {
+    console.log("hero")
   try {
     const res = await logoutApi();
 
