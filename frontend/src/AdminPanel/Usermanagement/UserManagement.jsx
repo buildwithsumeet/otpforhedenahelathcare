@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Users } from "lucide-react";
 import UserControls from "./UserControls";
 import UserTable from "./UserTable";
+import AddUserModal from "./AddUserModal";
+
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -10,6 +12,96 @@ const UserManagement = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null); // Add this for edit mode
+
+  // Handle add user button click from UserControls
+  const handleAddUser = () => {
+    setEditingUser(null); // Clear editing user for add mode
+    setIsModalOpen(true);
+  };
+
+  // Handle edit user button click from table
+  const handleEditUser = (user) => {
+    console.log('Edit user:', user);
+    setEditingUser(user); // Set user for edit mode
+    setIsModalOpen(true);
+  };
+
+  // Handle form submission from modal (both add and edit)
+  const handleUserAdd = (userData) => {
+    console.log('Received form data:', userData);
+    
+    if (editingUser) {
+      // Edit existing user
+      const updatedUser = {
+        ...editingUser,
+        ...userData,
+        // Keep original ID and creation data
+        id: editingUser.id,
+        avatar: userData.fullName ? 
+          userData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 
+          editingUser.avatar,
+        lastLogin: new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).replace(',', ''),
+        // Map fields for compatibility
+        username: userData.fullName?.toLowerCase().replace(/\s+/g, '_') || editingUser.username,
+        firstName: userData.fullName?.split(' ')[0] || editingUser.firstName,
+        lastName: userData.fullName?.split(' ').slice(1).join(' ') || editingUser.lastName,
+        phone: userData.phoneNumber || userData.phone || editingUser.phone,
+        department: userData.designation?.split(' ')[0] || userData.department || editingUser.department,
+        role: userData.role || userData.designation || editingUser.role,
+        fullName: userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+      };
+
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === editingUser.id ? updatedUser : user
+        )
+      );
+      
+      console.log('User updated:', updatedUser);
+    } else {
+      // Add new user
+      const newUser = {
+        id: Date.now(),
+        username: userData.fullName?.toLowerCase().replace(/\s+/g, '_') || `user_${Date.now()}`,
+        email: userData.email || '',
+        firstName: userData.fullName?.split(' ')[0] || '',
+        lastName: userData.fullName?.split(' ').slice(1).join(' ') || '',
+        phone: userData.phoneNumber || '',
+        department: userData.designation?.split(' ')[0] || 'General',
+        role: userData.role || userData.designation || '',
+        status: userData.status || 'Active',
+        avatar: userData.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U',
+        lastLogin: new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).replace(',', ''),
+        ...userData,
+        fullName: userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+      };
+
+      setUsers(prevUsers => [...prevUsers, newUser]);
+      console.log('New user added:', newUser);
+    }
+
+    setIsModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingUser(null); // Clear editing user when modal closes
+  };
 
   // Sample users data
   useEffect(() => {
@@ -26,6 +118,12 @@ const UserManagement = () => {
         status: 'Active',
         avatar: 'JD',
         lastLogin: '2025-01-17 14:30',
+        fullName: 'John Doe',
+        phoneNumber: '+1 (555) 123-4567',
+        designation: 'Senior Developer',
+        userType: 'Employee',
+        employeeId: 'EMP001',
+        gender: 'Male'
       },
       {
         id: 2,
@@ -39,6 +137,12 @@ const UserManagement = () => {
         status: 'Active',
         avatar: 'JS',
         lastLogin: '2025-01-17 09:15',
+        fullName: 'Jane Smith',
+        phoneNumber: '+1 (555) 234-5678',
+        designation: 'Marketing Manager',
+        userType: 'Employee',
+        employeeId: 'EMP002',
+        gender: 'Female'
       },
       {
         id: 3,
@@ -52,57 +156,30 @@ const UserManagement = () => {
         status: 'Inactive',
         avatar: 'MW',
         lastLogin: '2025-01-15 16:45',
-      },
-      {
-        id: 4,
-        username: 'sarah_johnson',
-        email: 'sarah.johnson@company.com',
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        phone: '+1 (555) 456-7890',
-        department: 'HR',
-        role: 'HR Specialist',
-        status: 'Active',
-        avatar: 'SJ',
-        lastLogin: '2025-01-17 11:20',
-      },
-      {
-        id: 5,
-        username: 'david_brown',
-        email: 'david.brown@company.com',
-        firstName: 'David',
-        lastName: 'Brown',
-        phone: '+1 (555) 567-8901',
-        department: 'Finance',
-        role: 'Financial Analyst',
-        status: 'Suspended',
-        avatar: 'DB',
-        lastLogin: '2025-01-10 13:30',
-      },
-      {
-        id: 6,
-        username: 'lisa_davis',
-        email: 'lisa.davis@company.com',
-        firstName: 'Lisa',
-        lastName: 'Davis',
-        phone: '+1 (555) 678-9012',
-        department: 'Engineering',
-        role: 'UI/UX Designer',
-        status: 'Active',
-        avatar: 'LD',
-        lastLogin: '2025-01-17 10:45',
+        fullName: 'Mike Wilson',
+        phoneNumber: '+1 (555) 345-6789',
+        designation: 'Sales Representative',
+        userType: 'Employee',
+        employeeId: 'EMP003',
+        gender: 'Male'
       }
     ]);
   }, []);
 
-  // Filtering logic
+  // UPDATED: Filtering logic to work with both field types
   const filteredUsers = users.filter(user => {
+    const searchText = searchTerm.toLowerCase();
     const matchesSearch =
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = !filterDepartment || user.department === filterDepartment;
+      (user.firstName && user.firstName.toLowerCase().includes(searchText)) ||
+      (user.lastName && user.lastName.toLowerCase().includes(searchText)) ||
+      (user.fullName && user.fullName.toLowerCase().includes(searchText)) ||
+      (user.username && user.username.toLowerCase().includes(searchText)) ||
+      (user.email && user.email.toLowerCase().includes(searchText));
+    
+    const matchesDepartment = !filterDepartment || 
+      user.department === filterDepartment ||
+      (user.designation && user.designation.includes(filterDepartment));
+    
     const matchesStatus = !filterStatus || user.status === filterStatus;
     return matchesSearch && matchesDepartment && matchesStatus;
   });
@@ -113,29 +190,18 @@ const UserManagement = () => {
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
   // Event handlers
-  const handleAddUser = () => {
-    console.log('Add user clicked');
-    // Add your logic here
-  };
-
   const handleViewUser = (user) => {
     console.log('View user:', user);
-    // Add your logic here
-  };
-
-  const handleEditUser = (user) => {
-    console.log('Edit user:', user);
-    // Add your logic here
+    // Add your view logic here
   };
 
   const handleDeleteUser = (user) => {
     console.log('Delete user:', user);
-    // Add your logic here
+    setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-      {/* Content wrapper with proper padding */}
       <div className="p-4 sm:p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -185,8 +251,16 @@ const UserManagement = () => {
           setCurrentPage={setCurrentPage}
           itemsPerPage={itemsPerPage}
           onViewUser={handleViewUser}
-          onEditUser={handleEditUser}
+          onEditUser={handleEditUser} // Pass edit handler
           onDeleteUser={handleDeleteUser}
+        />
+        
+        {/* Add/Edit User Modal */}
+        <AddUserModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onSubmit={handleUserAdd}
+          editingUser={editingUser} // Pass editing user data
         />
       </div>
     </div>

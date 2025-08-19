@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, Gift } from 'lucide-react';
 import { getUpcomingEvents } from '../../Api/celebrationsApi';
 
-const UpcomingCelebrations = () => {
+const UpcomingAnniversaries = () => {
   const [birthdays, setBirthdays] = useState([]);
   const [anniversaries, setAnniversaries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,7 @@ const UpcomingCelebrations = () => {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-2  ">
       {/* Birthdays */}
       <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200/50 overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-100">
@@ -129,4 +129,4 @@ const UpcomingCelebrations = () => {
   );
 };
 
-export default UpcomingCelebrations;
+export default UpcomingAnniversaries;

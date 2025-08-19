@@ -38,19 +38,20 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg group-hover:scale-105 transition-all duration-300">
-                <Users className="text-white" size={24} />
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-2xl font-bold text-slate-800 tracking-tight">
-                  LetsConnect
-                </span>
-                <Sparkles className="text-amber-500" size={16} />
-              </div>
-            </Link>
-          </div>
+        <div className="flex items-center gap-3">
+  <Link to="/" className="flex items-center gap-2 group cursor-pointer">
+    <div className="flex items-center gap-1">
+      <img 
+        src="/logo.png" 
+        alt="LetsConnect Logo" 
+        className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105" 
+      />
+      <Sparkles className="text-amber-500" size={16} />
+    </div>
+  </Link>
+</div>
+
+
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">

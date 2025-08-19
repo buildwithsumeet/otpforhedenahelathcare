@@ -16,7 +16,7 @@ import { useUser } from "../../ContextApi/UserContext";
 // Import the updated component
 import TodayCelebrations from "./TodayCelebrations";
 import UpcomingAnniversaries from "./UpcomeingAnniversaries";
-import UpcomingBirthdays from "./UpcomeingBirthdays";
+
 
 const Home = () => {
   const { user } = useUser(); // get user from context
@@ -71,8 +71,8 @@ const Home = () => {
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {/* Connection network pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <svg className="w-full h-full" viewBox="0 0 100 100" fill="none">
+        <div className="absolute inset-0 opacity-5 top-70">
+          <svg className="w-full h-full " viewBox="0 0 100 100" fill="none">
             <defs>
               <pattern id="connection-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
                 <circle cx="2" cy="2" r="1" fill="currentColor" className="text-indigo-400"/>
@@ -105,7 +105,7 @@ const Home = () => {
 
       {/* Hero Section - Made fully responsive */}
       <div className={`relative z-10 transition-all duration-1000 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-10 sm:py-16 lg:py-20  lg:px-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-10 sm:py-16 lg:py-30  lg:px-8">
           <div className="text-center">
             {/* Welcome Badge - Made responsive */}
             <div className="inline-flex items-center gap-2 sm:gap-3 bg-white/95 backdrop-blur-xl px-4 sm:px-6 lg:px-10 py-2 sm:py-3 lg:py-4 rounded-full mb-4 sm:mb-6 lg:mb-8 border border-indigo-200/50 shadow-2xl hover:shadow-3xl transition-all duration-500 group">
@@ -176,8 +176,8 @@ const Home = () => {
         />
 
         {/* Upcoming Events Grid - Made responsive */}
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 transition-all duration-1000 delay-500 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-          {/* <UpcomingBirthdays upcomingBirthdays={upcomingBirthdays} /> */}
+        <div className={`grid grid-cols-1  gap-4 sm:gap-6 lg:gap-8 transition-all duration-1000 delay-500 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          
           <UpcomingAnniversaries upcomingAnniversaries={upcomingAnniversaries} />
         </div>
       </div>
