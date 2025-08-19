@@ -9,9 +9,12 @@ import Signup from './Components/SignupPage/Signup'
 import Login from './Components/Login Page/Login'
 import UserManagement from './AdminPanel/Usermanagement/UserManagement'
 import SocialMediaHome from './Components/HomePage/SocialMediaHome'
-import { AuthProvider } from './ContextApi/AuthContext'
 import { UserProvider } from './ContextApi/UserContext'
 import './app.css';
+import RoleManagement from './AdminPanel/RoleManagement/RoleManagement'
+import AlertDaysManagement from './AdminPanel/Eventpage/AlertDaysManagement'
+import FamilyTreeComponent from './AdminPanel/FamilyTree/FamilyTreeComponent'
+import HolidayManagement from './AdminPanel/Holiday/HolidayManagement'
 
 function App() {
   return (
@@ -32,6 +35,10 @@ function App() {
         <Route element={<AdminLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/users" element={<UserManagement/>} />
+          <Route path="/roles" element={<RoleManagement/>} />
+          <Route path="/events" element={<AlertDaysManagement/>} />
+          <Route path="/family-tree" element={<FamilyTreeComponent/>} />
+          <Route path="/holidays" element={<HolidayManagement/>} />
         </Route>
       </Routes>
       </UserProvider>
