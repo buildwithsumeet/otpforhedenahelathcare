@@ -241,11 +241,10 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
 const showAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find().select("-password -refreshToken");
-  if (!users || users.length === 0) {
-    return res.status(404).json(new ApiResponse(404, null, "No users found"));
-  } else {
-    return res.json(new ApiResponse(200, users, "Users fetched successfully"));
-  }
+
+  res.status(200).json(
+    new ApiResponse(200, users, "Users fetched successfully")
+  );
 });
 
 const editUser = asyncHandler(async (req, res) => {

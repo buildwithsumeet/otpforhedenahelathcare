@@ -41,6 +41,3 @@ const getUpcomingEvents = () => {
 };
 
 export { getTodayEvents , getUpcomingEvents };
-
-
-
