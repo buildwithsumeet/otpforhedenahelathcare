@@ -10,7 +10,7 @@ import Login from './Components/Login Page/Login'
 import UserManagement from './AdminPanel/Usermanagement/UserManagement'
 import SocialMediaHome from './Components/HomePage/SocialMediaHome'
 import { UserProvider } from './ContextApi/UserContext'
-import './app.css';
+import './App.css';
 import RoleManagement from './AdminPanel/RoleManagement/RoleManagement'
 import AlertDaysManagement from './AdminPanel/Eventpage/AlertDaysManagement'
 import FamilyTreeComponent from './AdminPanel/FamilyTree/FamilyTreeComponent'
@@ -49,3 +49,4 @@ function App() {
 }
 
 export default App
+
