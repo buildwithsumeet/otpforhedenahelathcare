@@ -1,63 +1,65 @@
 import React, { useState } from 'react';
 import { Users, Menu, X, Sparkles, LogOut, User } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; // Add useNavigate import
+import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../../ContextApi/UserContext';
 import { logoutApi } from '../../Api/logoutApi';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useUser();
-  const navigate = useNavigate(); // Add this line
-  const isLoggedIn = !!user; 
+  const navigate = useNavigate();
+  const isLoggedIn = !!user;
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   const handleLogout = async () => {
-    console.log("hero")
-  try {
-    const res = await logoutApi();
+    console.log("Logging out...");
+    try {
+      const res = await logoutApi();
 
-    if (res.success) {
-      // ✅ Logout successful
-      console.log("Logged out successfully");
-      // e.g. clear local state, redirect, etc.
-      localStorage.clear();
-      window.location.href = "/login";
-    } else {
-      console.error("Logout failed:", res.message);
+      if (res) {
+        console.log("Logged out successfully ✅");
+
+        // Clear global state
+        logout();
+
+        // Clear all localStorage
+        localStorage.clear();
+
+        // Close mobile menu if open
+        setIsMenuOpen(false);
+
+        // Redirect to login
+        navigate("/login", { replace: true });
+      } else {
+        console.error("Logout failed:", res.message);
+      }
+    } catch (err) {
+      console.error("Error while logging out:", err);
     }
-  } catch (err) {
-    console.error("Error while logging out:", err);
-  }
-};
+  };
 
-  // Rest of your component remains the same...
   return (
     <nav className="bg-white/95 backdrop-blur-xl border-b border-slate-200/50 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo Section */}
-        <div className="flex items-center gap-3">
-  <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-    <div className="flex items-center gap-1">
-      <img 
-        src="/logo.png" 
-        alt="LetsConnect Logo" 
-        className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105" 
-      />
-      <Sparkles className="text-amber-500" size={16} />
-    </div>
-  </Link>
-</div>
-
-
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2 group cursor-pointer">
+              <img 
+                src="/logo.png" 
+                alt="LetsConnect Logo" 
+                className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105" 
+              />
+              <Sparkles className="text-amber-500" size={16} />
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
             {isLoggedIn ? (
-              // Logged in state
               <div className="flex items-center gap-4">
                 <Link 
                   to="/dashboard"
@@ -75,14 +77,11 @@ const Navbar = () => {
                 </button>
               </div>
             ) : (
-              // Not logged in state
-              <div className="flex items-center gap-4">
-                <Link to="/login">
-                  <button className="bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-cyan-600 transition-all duration-300 transform hover:-translate-y-0.5">
-                    Login
-                  </button>
-                </Link>
-              </div>
+              <Link to="/login">
+                <button className="bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-cyan-600 transition-all duration-300 transform hover:-translate-y-0.5">
+                  Login
+                </button>
+              </Link>
             )}
           </div>
 
@@ -98,14 +97,13 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Menu */}
-        <div className={`md:hidden transition-all duration-300 ease-in-out ${
-          isMenuOpen 
-            ? 'max-h-48 opacity-100 pb-4' 
-            : 'max-h-0 opacity-0 overflow-hidden'
-        }`}>
+        <div
+          className={`md:hidden transition-all duration-300 ease-in-out ${
+            isMenuOpen ? 'max-h-48 opacity-100 pb-4' : 'max-h-0 opacity-0 overflow-hidden'
+          }`}
+        >
           <div className="flex flex-col space-y-3 pt-4 border-t border-slate-200">
             {isLoggedIn ? (
-              // Mobile logged in state
               <>
                 <Link 
                   to="/dashboard"
@@ -124,17 +122,14 @@ const Navbar = () => {
                 </button>
               </>
             ) : (
-              // Mobile not logged in state
-              <>
-                <Link 
-                  to="/login"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <button className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold px-4 py-3 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-cyan-600 transition-all duration-300">
-                    Login
-                  </button>
-                </Link>
-              </>
+              <Link 
+                to="/login"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <button className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold px-4 py-3 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-cyan-600 transition-all duration-300">
+                  Login
+                </button>
+              </Link>
             )}
           </div>
         </div>

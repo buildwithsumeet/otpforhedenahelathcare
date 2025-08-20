@@ -10,89 +10,90 @@ const UserManagement = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [loading, setLoading] = useState(true);
 
-  // Sample users data
+  // Fetch users from API
   useEffect(() => {
-    setUsers([
-      {
-        id: 1,
-        username: 'john_doe',
-        email: 'john.doe@company.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        phone: '+1 (555) 123-4567',
-        department: 'Engineering',
-        role: 'Senior Developer',
-        status: 'Active',
-        avatar: 'JD',
-        lastLogin: '2025-01-17 14:30',
-      },
-      {
-        id: 2,
-        username: 'jane_smith',
-        email: 'jane.smith@company.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        phone: '+1 (555) 234-5678',
-        department: 'Marketing',
-        role: 'Marketing Manager',
-        status: 'Active',
-        avatar: 'JS',
-        lastLogin: '2025-01-17 09:15',
-      },
-      {
-        id: 3,
-        username: 'mike_wilson',
-        email: 'mike.wilson@company.com',
-        firstName: 'Mike',
-        lastName: 'Wilson',
-        phone: '+1 (555) 345-6789',
-        department: 'Sales',
-        role: 'Sales Representative',
-        status: 'Inactive',
-        avatar: 'MW',
-        lastLogin: '2025-01-15 16:45',
-      },
-      {
-        id: 4,
-        username: 'sarah_johnson',
-        email: 'sarah.johnson@company.com',
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        phone: '+1 (555) 456-7890',
-        department: 'HR',
-        role: 'HR Specialist',
-        status: 'Active',
-        avatar: 'SJ',
-        lastLogin: '2025-01-17 11:20',
-      },
-      {
-        id: 5,
-        username: 'david_brown',
-        email: 'david.brown@company.com',
-        firstName: 'David',
-        lastName: 'Brown',
-        phone: '+1 (555) 567-8901',
-        department: 'Finance',
-        role: 'Financial Analyst',
-        status: 'Suspended',
-        avatar: 'DB',
-        lastLogin: '2025-01-10 13:30',
-      },
-      {
-        id: 6,
-        username: 'lisa_davis',
-        email: 'lisa.davis@company.com',
-        firstName: 'Lisa',
-        lastName: 'Davis',
-        phone: '+1 (555) 678-9012',
-        department: 'Engineering',
-        role: 'UI/UX Designer',
-        status: 'Active',
-        avatar: 'LD',
-        lastLogin: '2025-01-17 10:45',
+    const fetchUsers = async () => {
+      try {
+        // In a real application, this would be an actual API call
+        // For demonstration, we'll simulate the API response
+        const apiResponse = {
+          statusCode: 200,
+          message: [
+            {
+              _id: "68a0c08810a895958ec3e192",
+              name: "admin",
+              email: "admin@gmail.com",
+              avatar: "http://res.cloudinary.com/dfqcptgtp/image/upload/v1755365512/gnrzke6jjxhgujbqwasd.png",
+              role: "superadmin",
+              anniversary: "19/08/2024",
+              dob: "21/08/1999",
+              createdAt: "2025-08-16T17:31:52.980Z",
+              updatedAt: "2025-08-20T07:19:01.828Z",
+              __v: 0,
+              isActive: true,
+              isDeleted: false
+            },
+            {
+              _id: "68a182c077e62689c766bc6f",
+              name: "user2001",
+              email: "user2001@gmail.com",
+              avatar: "http://res.cloudinary.com/dfqcptgtp/image/upload/v1755415231/vnxhpj7gzizjaly5n6h4.png",
+              phonenumber: "9090384201",
+              role: "user",
+              anniversary: "20/08/2024",
+              dob: "19/08/1999",
+              isActive: true,
+              isDeleted: false,
+              createdAt: "2025-08-17T07:20:32.398Z",
+              updatedAt: "2025-08-17T07:20:32.398Z",
+              __v: 0
+            },
+            {
+              _id: "68a1862ddcfa61efe5c0f6ee",
+              name: "admin1",
+              email: "admin1@gmail.com",
+              avatar: "http://res.cloudinary.com/dfqcptgtp/image/upload/v1755416108/nxf5jghcklrtxcnxofyd.png",
+              phonenumber: "1234567890",
+              role: "user",
+              anniversary: "19/08/2024",
+              dob: "20/08/1999",
+              isActive: true,
+              isDeleted: false,
+              createdAt: "2025-08-17T07:35:09.209Z",
+              updatedAt: "2025-08-17T07:35:09.209Z",
+              __v: 0
+            }
+          ],
+          data: "Users fetched successfully",
+          success: true
+        };
+
+        // Transform API data to match our component's expected format
+        const transformedUsers = apiResponse.message.map(user => ({
+          id: user._id,
+          username: user.name,
+          email: user.email,
+          firstName: user.name.split(' ')[0],
+          lastName: user.name.split(' ').length > 1 ? user.name.split(' ')[1] : '',
+          phone: user.phonenumber || 'N/A',
+          department: user.role === 'superadmin' ? 'Administration' : 'General',
+          role: user.role,
+          status: user.isActive ? 'Active' : 'Inactive',
+          avatar: user.avatar,
+          lastLogin: new Date(user.updatedAt).toLocaleString()
+        }));
+
+        setUsers(transformedUsers);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        setLoading(false);
       }
-    ]);
+    };
+
+    fetchUsers();
   }, []);
 
   // Filtering logic
@@ -132,6 +133,17 @@ const UserManagement = () => {
     console.log('Delete user:', user);
     // Add your logic here
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-slate-700">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">

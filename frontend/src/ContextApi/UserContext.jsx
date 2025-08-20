@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getCurrentUsers } from '../Api/currentUserApi';
 
 const UserContext = createContext();
 
@@ -9,10 +10,17 @@ export const UserProvider = ({ children }) => {
 
   // Persist user session across refresh
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+   const response  = getCurrentUsers();
+    response.then((data) => {
+      console.log("Current User Data:", data.user);
+      if (data.user) {
+        setUser(data.user); // Set user from API response
+      } else {
+        console.error(data.message);
+      }
+    }).catch((error) => {
+      console.error("Error fetching current user:", error);
+    });
   }, []);
 
   // Set user after login

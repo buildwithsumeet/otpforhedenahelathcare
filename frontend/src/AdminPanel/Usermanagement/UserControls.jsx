@@ -8,8 +8,12 @@ const UserControls = ({
   setFilterDepartment,
   filterStatus,
   setFilterStatus,
-  onAddUser
+  onAddUser,
+  users = [] // Add users prop to extract unique departments
 }) => {
+  // Extract unique departments from users data
+  const departments = [...new Set(users.map(user => user.department))].sort();
+  
   return (
     <div className="mb-6 bg-white/95 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-indigo-200/50 shadow-lg">
       <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center justify-between">
@@ -37,11 +41,9 @@ const UserControls = ({
               className="px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full sm:w-auto min-w-[140px]"
             >
               <option value="">All Departments</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Sales">Sales</option>
-              <option value="HR">HR</option>
-              <option value="Finance">Finance</option>
+              {departments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
             </select>
             
             <select

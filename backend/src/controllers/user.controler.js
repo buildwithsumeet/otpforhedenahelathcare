@@ -136,25 +136,25 @@ return res.status(200).cookie("accessToken", accessToken, options)
 
 });
 const logoutUser = asyncHandler(async (req, res) => {
+  if (req.user?._id) {
+    await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
+  }
 
-  console.log("User logging out:", req.user);
-  await User.findByIdAndUpdate(req.user._id, {
-    $set: {
-      refreshToken: null
-    }
-  }, { new: true, runValidators: true });
-
-  const options = {
+  // ⚠️ Must exactly match what you used in login
+  const cookieOptions = {
     httpOnly: true,
-    secure: true
+    secure: process.env.NODE_ENV === "production", // false on localhost
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", 
+    path: "/",  // include this to ensure correct clearing
   };
 
   return res
     .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
     .json(new ApiResponse(200, null, "User logged out successfully"));
 });
+
 
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
