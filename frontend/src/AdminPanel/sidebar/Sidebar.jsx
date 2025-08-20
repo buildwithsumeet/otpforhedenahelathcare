@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useUser } from '../../ContextApi/UserContext';
+import { logoutApi } from '../../Api/logoutApi';
 import {
   Home,
   Users,
@@ -39,6 +41,33 @@ const Sidebar = ({ children }) => {
 
   const handleMenuItemClick = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    console.log("Logging out...");
+    try {
+      const res = await logoutApi();
+  
+      if (res) {
+        console.log("Logged out successfully ✅");
+  
+        // 🔥 Clear global state
+        logout();
+  
+        // 🔥 Clear all localStorage (or specific keys if needed)
+        localStorage.clear();
+  
+        // Close mobile menu if open
+        setIsMenuOpen(false);
+  
+        // Redirect to login
+        navigate("/login", { replace: true });
+      } else {
+        console.error("Logout failed:", res.message);
+      }
+    } catch (err) {
+      console.error("Error while logging out:", err);
+    }
   };
 
   return (
@@ -118,7 +147,7 @@ const Sidebar = ({ children }) => {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-indigo-100/50 bg-slate-50/50">
+        <div className="p-4 border-t border-indigo-100/50 bg-slate-50/50" onClick={handleLogout}>
           <Link
             to="/"
             onClick={() => setIsMobileMenuOpen(false)}

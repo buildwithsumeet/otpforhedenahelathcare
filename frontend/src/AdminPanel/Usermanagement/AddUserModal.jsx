@@ -2,47 +2,52 @@ import React, { useState, useEffect } from "react";
 import { X, Save, AlertCircle } from "lucide-react";
 import { userFields } from "./userFields";
 
-const initialValues = userFields.reduce((acc, field) => {
-  acc[field.name] = field.type === "file" ? null : "";
-  return acc;
-}, {});
+// Create initial values based on userFields
+const getInitialValues = () => {
+  return userFields.reduce((acc, field) => {
+    acc[field.name] = field.type === "file" ? null : "";
+    return acc;
+  }, {});
+};
 
 const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
-  const [values, setValues] = useState(initialValues);
+  const [values, setValues] = useState(getInitialValues());
   const [fileURL, setFileURL] = useState(null);
   const [errors, setErrors] = useState({});
 
   // Pre-fill form when editing user
   useEffect(() => {
     if (editingUser && isOpen) {
-      // Map existing user data to form fields
-      setValues({
-        userType: editingUser.userType || '',
-        employeeId: editingUser.employeeId || editingUser.id,
-        designation: editingUser.designation || editingUser.role || '',
-        gender: editingUser.gender || '',
-        fullName: editingUser.fullName || `${editingUser.firstName || ''} ${editingUser.lastName || ''}`.trim(),
+      // Map API user data to form fields
+      const formValues = {
+        name: editingUser.name || '',
         email: editingUser.email || '',
+        phonenumber: editingUser.phonenumber || '',
         role: editingUser.role || '',
-        phoneNumber: editingUser.phoneNumber || editingUser.phone || '',
-        dateOfBirth: editingUser.dateOfBirth || '',
-        dateOfJoining: editingUser.dateOfJoining || '',
-        dateOfAnniversary: editingUser.dateOfAnniversary || '',
-        status: editingUser.status || 'Active',
+        anniversary: editingUser.anniversary || '',
+        dob: editingUser.dob || '',
+        // Don't pre-fill password for editing
+        password: '',
         // Add any additional fields from your userFields
-        ...Object.keys(initialValues).reduce((acc, key) => {
-          if (editingUser[key] !== undefined) {
+        ...Object.keys(getInitialValues()).reduce((acc, key) => {
+          if (editingUser[key] !== undefined && key !== 'password') {
             acc[key] = editingUser[key];
           }
           return acc;
         }, {})
-      });
+      };
+      
+      setValues(formValues);
+      
+      // Set avatar URL if exists
+      if (editingUser.avatar) {
+        setFileURL(editingUser.avatar);
+      }
     } else {
-      setValues(initialValues);
+      setValues(getInitialValues());
     }
     
-    // Reset file preview and errors when modal opens/closes
-    setFileURL(null);
+    // Reset errors when modal opens/closes
     setErrors({});
   }, [editingUser, isOpen]);
 
@@ -50,7 +55,7 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
     const { name, value, type, files } = e.target;
     if (type === "file") {
       setValues((prev) => ({ ...prev, [name]: files[0] || null }));
-      setFileURL(files ? URL.createObjectURL(files) : null);
+      setFileURL(files[0] ? URL.createObjectURL(files[0]) : null);
     } else {
       setValues((prev) => ({ ...prev, [name]: value }));
     }
@@ -64,8 +69,10 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
   // Form validation
   const validateForm = () => {
     const newErrors = {};
+    
     userFields.forEach(field => {
-      if (field.required && !values[field.name]) {
+      // Password is only required for new users, not when editing
+      if (field.required && !values[field.name] && (!editingUser || field.name !== 'password')) {
         newErrors[field.name] = `${field.label} is required`;
       }
     });
@@ -84,28 +91,24 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
     
     if (!validateForm()) return;
 
-    // Prepare user data
-    const userDataWithId = {
+    // Prepare user data for API
+    const userData = {
       ...values,
-      employeeId: editingUser ? editingUser.employeeId : `EMP${Date.now()}`,
-      avatar: values.fullName ? 
-        values.fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 
-        (editingUser ? editingUser.avatar : 'U'),
-      lastLogin: new Date().toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).replace(',', '')
+      // For editing, include the user ID
+      ...(editingUser && { _id: editingUser._id }),
+      // Remove empty password field when editing (if user didn't change it)
+      ...(editingUser && !values.password && { password: undefined })
     };
 
-    onSubmit(userDataWithId);
+    // Remove file field from the data (should be handled separately in file upload)
+    delete userData.avatar;
+
+    onSubmit(userData, values.avatar);
     handleClose();
   };
 
   const handleClose = () => {
-    setValues(initialValues);
+    setValues(getInitialValues());
     setFileURL(null);
     setErrors({});
     onClose();
@@ -139,18 +142,31 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
         {editingUser && (
           <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                {editingUser.avatar}
-              </div>
+              {fileURL || editingUser.avatar ? (
+                <img 
+                  src={fileURL || editingUser.avatar} 
+                  alt="User Avatar" 
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                  {editingUser.name ? editingUser.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium text-blue-900">
-                  Editing: {editingUser.fullName || `${editingUser.firstName} ${editingUser.lastName}`}
+                  Editing: {editingUser.name}
                 </p>
                 <p className="text-xs text-blue-600">
-                  ID: {editingUser.employeeId || editingUser.id} • {editingUser.email}
+                  ID: {editingUser._id} • {editingUser.email}
                 </p>
               </div>
             </div>
+            {editingUser && (
+              <p className="text-xs text-blue-600 mt-1">
+                Leave password empty to keep current password
+              </p>
+            )}
           </div>
         )}
 
@@ -160,15 +176,15 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
             {userFields.map((field) => (
               <div key={field.name} className="flex flex-col gap-2">
                 <label className="font-medium text-slate-700">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                  {field.label} {field.required && (!editingUser || field.name !== 'password') && <span className="text-red-500">*</span>}
                 </label>
 
                 {field.type === "select" ? (
                   <select
                     name={field.name}
-                    value={values[field.name]}
+                    value={values[field.name] || ''}
                     onChange={handleChange}
-                    required={field.required}
+                    required={field.required && (!editingUser || field.name !== 'password')}
                     disabled={field.disabled}
                     className={`border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
                       errors[field.name] ? 'border-red-300 bg-red-50' : 'border-slate-300 hover:border-indigo-300'
@@ -195,10 +211,11 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
                         <p className="text-sm text-slate-600">Preview</p>
                       </div>
                     )}
-                    {editingUser && !fileURL && (
-                      <p className="text-xs text-slate-500">
-                        Current: {editingUser.profilePicture ? 'Has profile picture' : 'No profile picture'}
-                      </p>
+                    {editingUser && !fileURL && editingUser.avatar && (
+                      <div className="flex items-center gap-3 mt-2">
+                        <img src={editingUser.avatar} alt="Current Profile" className="h-16 w-16 rounded-full border-2 border-indigo-200 object-cover" />
+                        <p className="text-sm text-slate-600">Current Avatar</p>
+                      </div>
                     )}
                   </div>
 
@@ -206,9 +223,9 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
                   <input
                     name={field.name}
                     type={field.type}
-                    value={field.type === "file" ? undefined : values[field.name]}
+                    value={values[field.name] || ''}
                     onChange={handleChange}
-                    required={field.required}
+                    required={field.required && (!editingUser || field.name !== 'password')}
                     placeholder={field.placeholder}
                     disabled={field.disabled}
                     className={`border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
@@ -225,13 +242,10 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, editingUser }) => {
                   </p>
                 )}
 
-                {/* Employee ID Help Text */}
-                {field.name === "employeeId" && (
+                {/* Password help text for editing */}
+                {editingUser && field.name === 'password' && (
                   <p className="text-xs text-slate-500">
-                    {editingUser 
-                      ? 'Employee ID cannot be changed' 
-                      : 'ID will be generated when you submit'
-                    }
+                    Leave empty to keep current password
                   </p>
                 )}
               </div>
