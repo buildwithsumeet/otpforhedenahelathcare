@@ -22,15 +22,20 @@ app.use(cookieParser());
 console.log("User routes loaded successfully2");
 
 // Enquiry Route (MUST be added ABOVE userRouter as you requested)
-import enquiryRouter from "./routes/enquiry.routes.js";
-app.use("/api/v1/enquiry", enquiryRouter);
+// import enquiryRouter from "./routes/enquiry.routes.js";
+// app.use("/api/v1/enquiry", enquiryRouter);
 
-// User Routes
-import userRouter from "./routes/user.routes.js";
-app.use("/api/v1/users", userRouter);
+// // User Routes
+// import userRouter from "./routes/user.routes.js";
+// app.use("/api/v1/users", userRouter);
 
-// Front Page Routes
-import pageRouter from "./routes/frontPage.routes.js";
-app.use("/api/v1/front-page", pageRouter);
+// // Front Page Routes
+// import pageRouter from "./routes/frontPage.routes.js";
+// app.use("/api/v1/front-page", pageRouter);
+
+// import eventImportantDayRouter from "./routes/eventImportantDay.routes.js";
+// app.use("/api/v1/events", eventImportantDayRouter);
+
+import otpRouter from "./routes/otpRoutes.js"
 
 export default app;
