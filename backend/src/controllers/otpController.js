@@ -39,7 +39,7 @@ export const bookingCreated = asyncHandler(async (req,res)=>{
   })
 
   // Update Bitrix
-  await axios.post("https://hedenahealthcare.bitrix24.in/rest/13/*******/crm.deal.update.json", {
+  await axios.post("https://hedenahealthcare.bitrix24.in/rest/19/44yudobbu1h28e7f/profile.json", {
   id: dealId,
   fields: {
     UF_CRM_START_OTP: startOTP
