@@ -1,2 +1,2 @@
-export const BITRIX_WEBHOOK = "https://hedenahealthcare.bitrix24.in/rest/19/a77p8afrdw71x5xn";
-export const BITRIX_TOKEN = "txizivonjjpgcvysnd38snsoiyx6a0vf";
+export const BITRIX_WEBHOOK = "https://hedenahealthcare.bitrix24.in/rest/19/b5v95nyp3em088vi";
+export const BITRIX_TOKEN = "haybts33w3etc2eszu7a04fc2eli4w75";
