@@ -39,12 +39,12 @@ export const bookingCreated = asyncHandler(async (req,res)=>{
   })
 
   // Update Bitrix
-  await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
-    ID: dealId,
-    fields: {
-      UF_CRM_START_OTP: startOTP
-    }
-  })
+  await axios.post("https://hedenahealthcare.bitrix24.in/rest/13/*******/crm.deal.update.json", {
+  id: dealId,
+  fields: {
+    UF_CRM_START_OTP: startOTP
+  }
+})
 
   return res.json(
     new ApiResponse(200,{ booking_id,startOTP },"OTP generated")
