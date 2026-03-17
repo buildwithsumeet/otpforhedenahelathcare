@@ -37,5 +37,6 @@ console.log("User routes loaded successfully2");
 // app.use("/api/v1/events", eventImportantDayRouter);
 
 import otpRouter from "./routes/otpRoutes.js"
+app.use("/api/v1/otpRouter", otpRouter)
 
 export default app;

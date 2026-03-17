@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-  "start": "node src/index.js"
+    "start": "node src/index.js"
   },
   "keywords": [
     "javascript"
@@ -14,6 +14,7 @@
   "license": "ISC",
   "author": "Sumeet",
   "dependencies": {
+    "axios": "^1.13.6",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
@@ -25,6 +26,7 @@
     "mongoose": "^8.16.1",
     "mongoose-aggregate-paginate-v2": "^1.1.4",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
     "nodemon": "^3.1.10"
   },
   "devDependencies": {

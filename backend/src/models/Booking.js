@@ -1,28 +1,27 @@
 import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
+  booking_id: { type: String, unique: true },
+  deal_id: String,
 
-  booking_id:{
-    type:String,
-    required:true,
-    unique:true
+  start_otp: String,
+  start_otp_expiry: Number,
+
+  completion_otp: String,
+  completion_otp_generated: {
+    type: Boolean,
+    default: false
   },
 
-  start_otp:String,
-
-  completion_otp:String,
-
-  status:{
-    type:String,
-    default:"pending"
+  status: {
+    type: String,
+    enum: ["pending", "started", "completed"],
+    default: "pending"
   },
 
-  start_time:Date,
+  start_time: Date,
+  end_time: Date
 
-  end_time:Date,
+}, { timestamps: true });
 
-  completion_otp_created_at:Date
-
-})
-
-export default mongoose.model("Booking",bookingSchema)
+export default mongoose.model("Booking", bookingSchema);
