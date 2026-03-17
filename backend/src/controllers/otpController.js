@@ -57,28 +57,60 @@ export const verifyStartOTP = asyncHandler(async (req,res)=>{
 
   const { booking_id, otp } = req.body
 
+  // 🔴 Validation
   if(!booking_id || !otp){
     throw new ApiError(400,"Required fields missing")
   }
 
   const booking = await Booking.findOne({ booking_id })
 
-  if(!booking) throw new ApiError(404,"Not found")
+  if(!booking){
+    throw new ApiError(404,"Booking not found")
+  }
 
+  // 🔴 OTP match
   if(booking.start_otp !== otp){
     throw new ApiError(401,"Invalid OTP")
   }
 
-  if(Date.now() > booking.start_otp_expiry){
-    throw new ApiError(400,"OTP expired")
+  // 🔴 Expiry check
+  // if(booking.start_otp_expiry && Date.now() > booking.start_otp_expiry){
+  //   throw new ApiError(400,"OTP expired")
+  // }
+
+  // 🔥 Already started check (IMPORTANT)
+  if(booking.status === "started"){
+    return res.json(
+      new ApiResponse(200,{},"Service already started")
+    )
   }
 
+  // ✅ Update booking (CRON ke liye important fields)
   booking.status = "started"
   booking.start_time = new Date()
+  booking.completion_otp_generated = false // 👈 cron use karega
 
   await booking.save()
 
-  return res.json(new ApiResponse(200,{},"Service started"))
+  // 🔥 Bitrix update (validation msg)
+  try {
+    await axios.post({BITRIX_WEBHOOK}, {
+      fields: {
+        ENTITY_ID: booking.deal_id,
+        ENTITY_TYPE: "deal",
+        COMMENT: "✅ Service Started (OTP Verified)"
+      }
+    })
+
+    console.log("✅ Bitrix updated (start)")
+
+  } catch (error) {
+    console.log("❌ Bitrix error:", error.response?.data)
+  }
+
+  return res.json(
+    new ApiResponse(200,{},"Service started successfully")
+  )
 })
 
 

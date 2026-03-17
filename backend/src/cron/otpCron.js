@@ -4,39 +4,70 @@ import { generateOTP } from "../utils/generateOTP.js"
 import axios from "axios"
 import { BITRIX_WEBHOOK } from "../config.js"
 
-// run every minute
-cron.schedule("* * * * *", async ()=>{
+// ⏰ every 1 minute
+cron.schedule("* * * * *", async () => {
 
-  console.log("Checking OTP...")
+  console.log("⏰ Cron running...")
 
-  const bookings = await Booking.find({
-    status: "started",
-    completion_otp_generated: false
-  })
+  try {
+    const now = new Date()
 
-  for(const booking of bookings){
+    const bookings = await Booking.find({
+      status: "started",
+      completion_otp_generated: false,
+      start_time: { $ne: null }
+    })
 
-    const diff = Date.now() - new Date(booking.start_time).getTime()
+    for (const booking of bookings) {
 
-    if(diff >= 10 * 60 * 1000){
+      const diff = now - new Date(booking.start_time)
 
-      const otp = generateOTP()
+      // ✅ 10 min delay validation
+      if (diff >= 10 * 60 * 1000) {
 
-      await Booking.findByIdAndUpdate(booking._id,{
-        completion_otp: otp,
-        completion_otp_generated: true
-      })
+        // 🔥 duplicate safe update
+        const updated = await Booking.findOneAndUpdate(
+          {
+            _id: booking._id,
+            completion_otp_generated: false
+          },
+          {
+            completion_otp: generateOTP(),
+            completion_otp_generated: true,
+            completion_otp_created_at: new Date()
+          },
+          { new: true }
+        )
 
-      console.log("Completion OTP:", otp)
+        if (!updated) continue
 
-      // Bitrix update
-      await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
-        ID: booking.deal_id,
-        fields: {
-          UF_CRM_COMPLETION_OTP: otp
+        console.log("🔢 OTP Generated:", updated.completion_otp)
+
+        // ✅ Bitrix send
+        try {
+          await axios.post(`${BITRIX_WEBHOOK}/crm.timeline.comment.add.json`, {
+            fields: {
+              ENTITY_ID: booking.deal_id,
+              ENTITY_TYPE: "deal",
+              COMMENT: `🔢 Completion OTP: ${updated.completion_otp}`
+            }
+          })
+
+          console.log("✅ Bitrix updated")
+
+        } catch (err) {
+          console.log("❌ Bitrix error:", err.response?.data)
+
+          // rollback
+          await Booking.findByIdAndUpdate(booking._id, {
+            completion_otp_generated: false
+          })
         }
-      })
+      }
     }
+
+  } catch (error) {
+    console.log("❌ Cron error:", error.message)
   }
 
 })
