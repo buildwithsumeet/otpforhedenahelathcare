@@ -7,26 +7,35 @@ import axios from "axios"
 import { BITRIX_WEBHOOK, BITRIX_TOKEN } from "../config.js"
 
 // 1️⃣ Bitrix Outbound Webhook (Deal Create)
-export const bookingCreated = asyncHandler(async (req,res)=>{
+export const bookingCreated = asyncHandler(async (req, res) => {
 
-     console.log("📩 Bitrix Webhook Hit:", req.body)
+  console.log("📩 Bitrix Webhook Hit:", JSON.stringify(req.body, null, 2))
 
   // Security
-  if(req.body?.auth?.application_token !== BITRIX_TOKEN){
-    throw new ApiError(403,"Unauthorized")
+  if (!req.body?.auth || req.body.auth.application_token !== BITRIX_TOKEN) {
+    throw new ApiError(403, "Unauthorized")
   }
 
-  const dealId = req.body?.data?.FIELDS?.ID
+  // ✅ Handle multiple payload formats
+  let dealId =
+    req.body?.data?.FIELDS?.ID ||
+    req.body?.data?.ID
 
-  if(!dealId){
-    throw new ApiError(400,"Deal ID missing")
+  // ✅ Convert to number
+  dealId = Number(dealId)
+
+  if (!dealId || isNaN(dealId)) {
+    throw new ApiError(400, "Invalid Deal ID")
   }
+
+  console.log("✅ Deal ID:", dealId)
 
   const booking_id = dealId
 
+  // Check existing booking
   const existing = await Booking.findOne({ booking_id })
-  if(existing){
-    return res.json(new ApiResponse(200,{},"Already exists"))
+  if (existing) {
+    return res.json(new ApiResponse(200, {}, "Already exists"))
   }
 
   const startOTP = generateOTP()
@@ -38,16 +47,26 @@ export const bookingCreated = asyncHandler(async (req,res)=>{
     start_otp_expiry: Date.now() + 10 * 60 * 1000
   })
 
-  // Update Bitrix
-  await axios.post("https://hedenahealthcare.bitrix24.in/rest/19/44yudobbu1h28e7f/profile.json", {
-  id: dealId,
-  fields: {
-    UF_CRM_START_OTP: startOTP
+  // ✅ Safe Bitrix update
+  try {
+    const response = await axios.post(
+      "https://hedenahealthcare.bitrix24.in/rest/19/yr6wkib0ffeylq91/crm.deal.update.json",
+      {
+        id: dealId,
+        fields: {
+          UF_CRM_START_OTP: startOTP
+        }
+      }
+    )
+
+    console.log("✅ Bitrix Update Response:", response.data)
+
+  } catch (error) {
+    console.error("❌ Bitrix Update Error:", error.response?.data || error.message)
   }
-})
 
   return res.json(
-    new ApiResponse(200,{ booking_id,startOTP },"OTP generated")
+    new ApiResponse(200, { booking_id, startOTP }, "OTP generated")
   )
 })
 
