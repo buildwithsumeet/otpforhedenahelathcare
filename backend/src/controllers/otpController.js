@@ -50,7 +50,7 @@ export const bookingCreated = asyncHandler(async (req, res) => {
   // ✅ Safe Bitrix update
   try {
     const response = await axios.post(
-      "https://hedenahealthcare.bitrix24.in/rest/13/7szjmvdxlqd1310e/crm.deal.fields.json",
+      "https://hedenahealthcare.bitrix24.in/rest/19/abyh3b8ueaqikfld/crm.deal.update.json",
       {
         id: dealId,
         fields: {
