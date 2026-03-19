@@ -16,23 +16,20 @@ export const bookingCreated = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized")
   }
 
-  // ✅ Handle multiple payload formats
-  let dealId =
+  // ✅ Bitrix Deal ID = booking_id
+  let booking_id =
     req.body?.data?.FIELDS?.ID ||
     req.body?.data?.ID
 
-  // ✅ Convert to number
-  dealId = Number(dealId)
+  booking_id = Number(booking_id)
 
-  if (!dealId || isNaN(dealId)) {
-    throw new ApiError(400, "Invalid Deal ID")
+  if (!booking_id || isNaN(booking_id)) {
+    throw new ApiError(400, "Invalid Booking ID")
   }
 
-  console.log("✅ Deal ID:", dealId)
+  console.log("✅ Booking ID:", booking_id)
 
-  const booking_id = dealId
-
-  // Check existing booking
+  // Already exist check
   const existing = await Booking.findOne({ booking_id })
   if (existing) {
     return res.json(new ApiResponse(200, {}, "Already exists"))
@@ -42,27 +39,24 @@ export const bookingCreated = asyncHandler(async (req, res) => {
 
   await Booking.create({
     booking_id,
-    deal_id: dealId,
     start_otp: startOTP,
-    start_otp_expiry: Date.now() + 10 * 60 * 1000
+    start_otp_expiry: Date.now() + 10 * 60 * 1000,
+    status: "pending"
   })
 
-  // ✅ Safe Bitrix update
+  // ✅ Bitrix me OTP save
   try {
-    const response = await axios.post(
-      "https://hedenahealthcare.bitrix24.in/rest/19/abyh3b8ueaqikfld/crm.deal.update.json",
-      {
-        id: dealId,
-        fields: {
-          UF_CRM_1773128404473: startOTP
-        }
+    await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/abyh3b8ueaqikfld/crm.deal.update.json`, {
+      ID: booking_id,
+      fields: {
+        UF_CRM_1773128404473: startOTP   // your Start OTP field
       }
-    )
+    })
 
-    console.log("✅ Bitrix Update Response:", response.data)
+    console.log("✅ Start OTP sent to Bitrix")
 
   } catch (error) {
-    console.error("❌ Bitrix Update Error:", error.response?.data || error.message)
+    console.log("❌ Bitrix error:", error.response?.data)
   }
 
   return res.json(
@@ -76,7 +70,10 @@ export const verifyStartOTP = asyncHandler(async (req,res)=>{
 
   const { booking_id, otp } = req.body
 
-  // 🔴 Validation
+  if (!req.body?.auth || req.body.auth.application_token !== "1mg3n9w7edjll06yxilumza1z3l5qrjz") {
+    throw new ApiError(403, "Unauthorized")
+  }
+
   if(!booking_id || !otp){
     throw new ApiError(400,"Required fields missing")
   }
@@ -87,56 +84,50 @@ export const verifyStartOTP = asyncHandler(async (req,res)=>{
     throw new ApiError(404,"Booking not found")
   }
 
-  // 🔴 OTP match
   if(booking.start_otp !== otp){
     throw new ApiError(401,"Invalid OTP")
   }
 
-  // 🔴 Expiry check
-  // if(booking.start_otp_expiry && Date.now() > booking.start_otp_expiry){
-  //   throw new ApiError(400,"OTP expired")
-  // }
-
-  // 🔥 Already started check (IMPORTANT)
   if(booking.status === "started"){
-    return res.json(
-      new ApiResponse(200,{},"Service already started")
-    )
+    return res.json(new ApiResponse(200,{},"Already started"))
   }
 
-  // ✅ Update booking (CRON ke liye important fields)
   booking.status = "started"
   booking.start_time = new Date()
-  booking.completion_otp_generated = false // 👈 cron use karega
+  booking.completion_otp_generated = false
 
   await booking.save()
 
-  // 🔥 Bitrix update (validation msg)
+  // ✅ Bitrix comment
   try {
-    await axios.post({BITRIX_WEBHOOK}, {
-      fields: {
-        ENTITY_ID: booking.deal_id,
-        ENTITY_TYPE: "deal",
-        COMMENT: "✅ Service Started (OTP Verified)"
-      }
-    })
-
-    console.log("✅ Bitrix updated (start)")
-
-  } catch (error) {
-    console.log("❌ Bitrix error:", error.response?.data)
+    await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
+  ID: booking_id,
+  fields: {
+    COMMENTS: "✅ Service Started"
+  }
+})
+  } catch (err) {
+    console.log("❌ Bitrix error:", err.response?.data)
   }
 
   return res.json(
-    new ApiResponse(200,{},"Service started successfully")
+    new ApiResponse(200,{},"Service started")
   )
 })
+
+
+
+
 
 
 // 3️⃣ Verify Completion OTP
 export const verifyCompletionOTP = asyncHandler(async (req,res)=>{
 
   const { booking_id, otp } = req.body
+
+  if (!req.body?.auth || req.body.auth.application_token !== "n0mak7pbxpk2ef0dk0wx9rtpqum76d7j") {
+    throw new ApiError(403, "Unauthorized")
+  }
 
   const booking = await Booking.findOne({ booking_id })
 
@@ -151,13 +142,22 @@ export const verifyCompletionOTP = asyncHandler(async (req,res)=>{
 
   await booking.save()
 
-  // Bitrix Deal Complete
-  await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
-    ID: booking.deal_id,
+  // ✅ Bitrix stage update
+  try {
+ await axios.post(
+  "https://hedenahealthcare.bitrix24.in/rest/19/abyh3b8ueaqikfld/crm.deal.update.json",
+  {
+    ID: booking_id,
     fields: {
       STAGE_ID: "C1:WON"
     }
-  })
+  }
+)
+  } catch (err) {
+    console.log("❌ Bitrix error:", err.response?.data)
+  }
 
-  return res.json(new ApiResponse(200,{},"Work completed"))
+  return res.json(
+    new ApiResponse(200,{},"Work completed")
+  )
 })

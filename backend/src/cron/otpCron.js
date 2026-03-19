@@ -1,13 +1,22 @@
 import cron from "node-cron"
+import mongoose from "mongoose"
 import Booking from "../models/Booking.js"
 import { generateOTP } from "../utils/generateOTP.js"
 import axios from "axios"
 import { BITRIX_WEBHOOK } from "../config.js"
 
+console.log("✅ OTP Cron module loaded")
+
 // ⏰ every 1 minute
-cron.schedule("* * * * *", async () => {
+const cronJob = cron.schedule("* * * * *", async () => {
 
   console.log("⏰ Cron running...")
+
+  // Check if DB is connected
+  if (mongoose.connection.readyState !== 1) {
+    console.log("❌ DB not connected, skipping cron")
+    return
+  }
 
   try {
     const now = new Date()
@@ -22,8 +31,10 @@ cron.schedule("* * * * *", async () => {
 
       const diff = now - new Date(booking.start_time)
 
-      // ✅ 10 min delay validation
+      // ✅ 10 min delay
       if (diff >= 10 * 60 * 1000) {
+
+        const otp = generateOTP()
 
         // 🔥 duplicate safe update
         const updated = await Booking.findOneAndUpdate(
@@ -32,7 +43,7 @@ cron.schedule("* * * * *", async () => {
             completion_otp_generated: false
           },
           {
-            completion_otp: generateOTP(),
+            completion_otp: otp,
             completion_otp_generated: true,
             completion_otp_created_at: new Date()
           },
@@ -41,24 +52,26 @@ cron.schedule("* * * * *", async () => {
 
         if (!updated) continue
 
-        console.log("🔢 OTP Generated:", updated.completion_otp)
+        console.log("🔢 Completion OTP Generated:", otp)
 
-        // ✅ Bitrix send
+        // ✅ Bitrix Update
         try {
-          await axios.post(`${BITRIX_WEBHOOK}/crm.timeline.comment.add.json`, {
-            fields: {
-              ENTITY_ID: booking.deal_id,
-              ENTITY_TYPE: "deal",
-              COMMENT: `🔢 Completion OTP: ${updated.completion_otp}`
+          const response = await axios.post(
+            `${BITRIX_WEBHOOK}/crm.deal.update.json`,
+            {
+              ID: booking.deal_id,   // ✅ FIXED
+              fields: {
+                UF_CRM_1773809108597: otp   // ⚠️ apna correct field ID use karo
+              }
             }
-          })
+          )
 
-          console.log("✅ Bitrix updated")
+          console.log("✅ Bitrix updated:", response.data)
 
         } catch (err) {
-          console.log("❌ Bitrix error:", err.response?.data)
+          console.log("❌ Bitrix error:", err.response?.data || err.message)
 
-          // rollback
+          // 🔁 rollback if Bitrix failed
           await Booking.findByIdAndUpdate(booking._id, {
             completion_otp_generated: false
           })

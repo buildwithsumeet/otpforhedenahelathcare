@@ -2,6 +2,9 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
+// Import cron job to start it
+import "./cron/otpCron.js";
+
 const app = express();
 
 // Middleware in this exact order

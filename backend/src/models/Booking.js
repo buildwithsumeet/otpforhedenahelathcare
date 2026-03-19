@@ -12,6 +12,7 @@ const bookingSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  completion_otp_created_at: Date,
 
   status: {
     type: String,
