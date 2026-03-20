@@ -42,4 +42,10 @@ console.log("User routes loaded successfully2");
 import otpRouter from "./routes/otpRoutes.js"
 app.use("/api/v1/otpRouter", otpRouter)
 
+import paymentRouter from "./routes/payment.routes.js"
+app.use("/api/v1/payment", paymentRouter)
+
+import bitrixRouter from "./routes/bitrix.routes.js"
+app.use("/api/v1/paymentFrontendSendLink" ,bitrixRouter )
+
 export default app;
