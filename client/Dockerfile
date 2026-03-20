@@ -8,18 +8,18 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+# RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build arguments for environment variables
-ARG VITE_BACKEND_URL
-ARG VITE_RAZORPAY_KEY
+# # Build arguments for environment variables
+# ARG VITE_BACKEND_URL
+# ARG VITE_RAZORPAY_KEY
 
-# Set environment variables for build
-ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
-ENV VITE_RAZORPAY_KEY=$VITE_RAZORPAY_KEY
+# # Set environment variables for build
+# ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+# ENV VITE_RAZORPAY_KEY=$VITE_RAZORPAY_KEY
 
 # Build the application
 RUN npm run build
