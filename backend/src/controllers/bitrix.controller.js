@@ -39,7 +39,7 @@ export const dealCreated = asyncHandler(async (req, res) => {
   console.log("💰 Amount:", amount)
 
   // 🔥 Step 2: Create frontend payment link
-  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${UF_CRM_1774078309138}&amount=${UF_CRM_1774078427 }`
+  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${UF_CRM_1774078309138}&amount=${UF_CRM_1774078427}`
 
   // 🔥 Step 3: Send to Bitrix
   await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
