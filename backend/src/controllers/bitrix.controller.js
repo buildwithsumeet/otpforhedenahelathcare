@@ -9,35 +9,59 @@ import { BITRIX_WEBHOOK, BITRIX_TOKEN } from "../config.js"
 
 
 export const dealCreated = asyncHandler(async (req, res) => {
-  const dealId = req.body?.data?.FIELDS?.ID; 
-  if (!dealId) return res.status(400).json({ message: "No Deal ID" });
+  console.log("📩 Bitrix Hit:", req.body);
 
-  // Use the full webhook URL from your Step 3 (the one you know works)
-  const webhookBase = "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1";
+  // security
+  if (req.body?.auth?.application_token !== "yvxw0jq6yy85wud4h11tclellumz7ip5") {
+    return res.status(403).json({ message: "Unauthorized" });
+  }
 
-  try {
-    // Step 1: Get deal details
-    const dealResponse = await axios.post(`${webhookBase}/crm.deal.get.json`, { 
-      id: dealId 
-    });
+  const dealId = Number(req.body?.data?.FIELDS?.ID);
 
-    const deal = dealResponse.data.result;
-    const amount = deal.OPPORTUNITY || 0;
+  if (!dealId) {
+    return res.status(400).json({ message: "Invalid Deal ID" });
+  }
 
-    // Step 2: Create link (Using dealId, not the deal object)
-    const paymentLink = `${process.env.FRONTEND_URL}/pay?deal_id=${dealId}&amount=${amount}`;
+  console.log("Deal ID:", dealId);
 
-    // Step 3: Update deal
-    await axios.post(`${webhookBase}/crm.deal.update.json`, {
+  // 🔥 Step 1: Get full deal details
+  const dealResponse = await axios.post(
+    "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.get.json",
+    { id: dealId }
+  );
+
+  const deal = dealResponse.data.result;
+
+  if (!deal) {
+    console.log("Deal fetch failed:", dealResponse.data);
+    return res.status(404).json({ message: "Deal not found" });
+  }
+
+  const amount = Number(deal.OPPORTUNITY) || 0;
+
+  console.log("💰 Amount:", amount);
+  console.log("Deal Title:", deal.TITLE);
+  console.log("Stage:", deal.STAGE_ID);
+  // console.log("Full deal object:", deal); // ← debugging ke liye (sab fields dekhne ke liye)
+
+  // 🔥 Step 2: Create frontend payment link
+  // (yahan dealId ko string mein convert kar rahe the → sahi nahi tha)
+  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${dealId}&amount=${amount}`;
+
+  // 🔥 Step 3: Update deal with payment link
+  await axios.post(
+    "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json",
+    {
       id: dealId,
       fields: {
-        UF_CRM_1773809108597: paymentLink
-      }
-    });
+        UF_CRM_1773809108597: paymentLink,   // yeh custom field hai payment link ke liye
+        // Agar aur kuch update karna ho to yahan daal sakte ho, jaise:
+        // COMMENT: `Payment link generated: ${paymentLink}`,
+      },
+    }
+  );
 
-    res.json({ success: true, paymentLink });
-  } catch (error) {
-    console.error("Bitrix API Error:", error.response?.data || error.message);
-    throw new ApiError(500, "Bitrix Integration Failed");
-  }
+  console.log("✅ Payment link updated in Bitrix:", paymentLink);
+
+  res.json({ success: true, paymentLink });
 });
