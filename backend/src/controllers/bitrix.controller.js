@@ -4,7 +4,7 @@ import ApiResponse from "../utils/ApiResponse.js"
 import Booking from "../models/Booking.js"
 import { generateOTP } from "../utils/generateOTP.js"
 import axios from "axios"
-import { BITRIX_WEBHOOK, BITRIX_TOKEN } from "../config.js"
+import { BITRIX_WEBHOOK, BITRIX_TOKEN, FRONTEND_URL } from "../config.js"
 
 
 

@@ -11,7 +11,7 @@ export const router = createBrowserRouter([
         element: <App />
     },
   {
-    path: "/pay/:booking_id",
+    path: "/pay",
     element: <PaymentPage />
   },
   {

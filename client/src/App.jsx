@@ -73,7 +73,7 @@ function App() {
               </a>
             </li>
             <li>
-              <a href="https://chat.vite.dev/" target="_blank">
+              <a href="https://discord.com/invite/vite" target="_blank">
                 <svg
                   className="button-icon"
                   role="presentation"

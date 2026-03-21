@@ -12,6 +12,8 @@ app.use(cors({
   origin: [
     process.env.CORS_ORIGIN,
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://187.127.131.10:80",
     "https://lets-connect-9s68-mwrwnuvvm-buildwithsumeets-projects.vercel.app"
   ].filter(Boolean), // removes undefined/null
   credentials: true,
