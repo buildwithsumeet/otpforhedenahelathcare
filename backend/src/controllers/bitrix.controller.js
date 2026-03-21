@@ -1,7 +1,13 @@
-// src/controllers/bitrixController.js
 import asyncHandler from "../utils/asyncHandler.js"
+import ApiError from "../utils/ApiError.js"
+import ApiResponse from "../utils/ApiResponse.js"
+import Booking from "../models/Booking.js"
+import { generateOTP } from "../utils/generateOTP.js"
 import axios from "axios"
-import { BITRIX_WEBHOOK, BITRIX_TOKEN, FRONTEND_URL } from "../config.js"
+import { BITRIX_WEBHOOK, BITRIX_TOKEN } from "../config.js"
+
+
+
 
 export const dealCreated = asyncHandler(async (req, res) => {
 
@@ -14,14 +20,28 @@ export const dealCreated = asyncHandler(async (req, res) => {
 
   const dealId = Number(req.body?.data?.FIELDS?.ID)
 
+  console.log(dealId)
+
   if (!dealId) {
     return res.status(400).json({ message: "Invalid Deal ID" })
   }
 
-  // 🔥 create payment link
-  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${dealId}`
+  // 🔥 Step 1: Get deal details (amount)
+  const dealResponse = await axios.post(
+    `${BITRIX_WEBHOOK}/crm.deal.get.json`,
+    { id: dealId }
+  )
 
-  // send to Bitrix
+  const deal = dealResponse.data.result
+
+  const amount = deal.OPPORTUNITY || 0   // 💰 amount
+
+  console.log("💰 Amount:", amount)
+
+  // 🔥 Step 2: Create frontend payment link
+  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${dealId}&amount=${amount}`
+
+  // 🔥 Step 3: Send to Bitrix
   await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
     id: dealId,
     fields: {
