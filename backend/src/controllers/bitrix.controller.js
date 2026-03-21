@@ -14,9 +14,11 @@ export const dealCreated = asyncHandler(async (req, res) => {
   console.log("📩 Bitrix Hit:", req.body)
 
   // security
-  if (req.body?.auth?.application_token !== BITRIX_TOKEN) {
+  if (req.body?.auth?.application_token !== "yvxw0jq6yy85wud4h11tclellumz7ip5") {
     return res.status(403).json({ message: "Unauthorized" })
   }
+
+  console.log(req.body)
 
   const dealId = Number(req.body?.data?.FIELDS?.ID)
 
@@ -39,13 +41,13 @@ export const dealCreated = asyncHandler(async (req, res) => {
   console.log("💰 Amount:", amount)
 
   // 🔥 Step 2: Create frontend payment link
-  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${UF_CRM_1774078309138}&amount=${UF_CRM_1774078427}`
+  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${deal}&amount=${amount}`
 
   // 🔥 Step 3: Send to Bitrix
-  await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
+  await axios.post("https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json", {
     id: dealId,
     fields: {
-      UF_PAYMENT_LINK: paymentLink
+      UF_CRM_1773809108597: paymentLink
     }
   })
 
