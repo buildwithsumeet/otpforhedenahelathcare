@@ -50,13 +50,11 @@ export const dealCreated = asyncHandler(async (req, res) => {
 
   // 🔥 Step 3: Update deal with payment link
   await axios.post(
-    "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.fields.json",
+    "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json",
     {
       id: dealId,
       fields: {
-        UF_CRM_1773809108597: paymentLink,   // yeh custom field hai payment link ke liye
-        // Agar aur kuch update karna ho to yahan daal sakte ho, jaise:
-        // COMMENT: `Payment link generated: ${paymentLink}`,
+        UF_CRM_1773813535000: paymentLink,   
       },
     }
   );
