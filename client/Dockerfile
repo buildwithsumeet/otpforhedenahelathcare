@@ -1,40 +1,22 @@
-# Stage 1: Build the React application
+# Stage 1: Build
 FROM node:20-alpine AS builder
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# 1. Copy dependency files
 COPY package*.json ./
 
-# Install dependencies
-# RUN npm ci
+# 2. INSTALL the dependencies (This is the missing link!)
+RUN npm install
 
-# Copy source code
+# 3. Copy the rest of the source code
 COPY . .
 
-# # Build arguments for environment variables
-# ARG VITE_BACKEND_URL
-# ARG VITE_RAZORPAY_KEY
-
-# # Set environment variables for build
-# ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
-# ENV VITE_RAZORPAY_KEY=$VITE_RAZORPAY_KEY
-
-# Build the application
+# 4. Build the project
 RUN npm run build
 
-# Stage 2: Serve with nginx
+# Stage 2: Serve
 FROM nginx:alpine
-
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built assets from builder stage
+# ... (rest of your nginx config)
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Expose port 80
 EXPOSE 80
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
