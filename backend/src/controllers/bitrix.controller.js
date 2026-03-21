@@ -50,7 +50,7 @@ export const dealCreated = asyncHandler(async (req, res) => {
 
   // 🔥 Step 3: Update deal with payment link
   await axios.post(
-    "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json",
+    "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.fields.json",
     {
       id: dealId,
       fields: {
