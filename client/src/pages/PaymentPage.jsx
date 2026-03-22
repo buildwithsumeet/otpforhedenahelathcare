@@ -33,7 +33,7 @@ const PaymentPage = () => {
       // data should return: { id: "order_xxx", amount: 8000, currency: "INR" }
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_xxxxxxxxxxxxxx", // fallback for debug
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SRrZ8YKuF5tkyr", // fallback for debug
         amount: data.amount,           // trust backend value (in paise)
         currency: data.currency || "INR",
         name: "Heden Healthcare",      // ← change to your brand
