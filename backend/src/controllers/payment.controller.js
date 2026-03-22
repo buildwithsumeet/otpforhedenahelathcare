@@ -22,6 +22,8 @@ export const createOrder = asyncHandler(async (req, res) => {
 });
 
 export const verifyPayment = asyncHandler(async (req, res) => {
+  console.log("🔍 Verify hit:", req.body)  // ← Add karo
+
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature, deal_id } = req.body;
 
   const hmac = crypto.createHmac("sha256", RAZORPAY_KEY_SECRET);
@@ -32,24 +34,29 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid signature" });
   }
 
-  // Find by deal_id but keep booking_id safe
-  const booking = await Booking.findOneAndUpdate(
-    { deal_id: Number(deal_id) }, 
-    { payment_id: razorpay_payment_id, order_id: razorpay_order_id, status: "booked" },
-    { upsert: true, new: true }
-  );
+  console.log("✅ Signature valid")  // ← Add karo
 
-  const response =  await axios.post("https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json",
- {
-    id: deal_id,
-    fields: {
-      UF_CRM_1773904189668: "PAID",
-      UF_CRM_1773902195825: razorpay_payment_id,
-      UF_CRM_1773813535000: razorpay_order_id
-    }
-  });
+  try {
+    const booking = await Booking.findOneAndUpdate(
+      { deal_id: Number(deal_id) }, 
+      { payment_id: razorpay_payment_id, order_id: razorpay_order_id, status: "booked" },
+      { upsert: true, new: true }
+    );
+    console.log("✅ Booking saved:", booking)  // ← Add karo
 
-  console.log(response)
+    const response = await axios.post("https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json", {
+      id: deal_id,
+      fields: {
+        UF_CRM_1773904189668: "PAID",
+        UF_CRM_1773902195825: razorpay_payment_id,
+        UF_CRM_1773813535000: razorpay_order_id
+      }
+    });
+    console.log("✅ Bitrix updated:", response.data)  // ← Add karo
 
-  res.status(200).json({ success: true, booking_id: booking.booking_id, deal_id });
+    res.status(200).json({ success: true, booking_id: booking.booking_id, deal_id });
+  } catch(err) {
+    console.error("❌ Error:", err.message)  // ← Add karo
+    res.status(500).json({ success: false, message: err.message })
+  }
 });
