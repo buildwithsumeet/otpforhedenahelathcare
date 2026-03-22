@@ -5,7 +5,6 @@ import FailedPage from "./pages/FailedPage"
 import App from "./App"
 
 export const router = createBrowserRouter([
-
     {
         path:"/",
         element: <App />
@@ -22,4 +21,4 @@ export const router = createBrowserRouter([
     path: "/failed",
     element: <FailedPage />
   }
-])
+], { basename: "/" })  // ← Yeh add karo
