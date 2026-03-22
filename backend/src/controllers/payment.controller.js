@@ -39,14 +39,17 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     { upsert: true, new: true }
   );
 
-  await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
+  const response =  await axios.post("https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json",
+ {
     id: deal_id,
     fields: {
-      STAGE_ID: "PAID",
-      UF_RAZORPAY_PAYMENT_ID: razorpay_payment_id,
-      UF_RAZORPAY_ORDER_ID: razorpay_order_id
+      UF_CRM_1773904189668: "PAID",
+      UF_CRM_1773902195825: razorpay_payment_id,
+      UF_CRM_1773813535000: razorpay_order_id
     }
   });
+
+  console.log(response)
 
   res.status(200).json({ success: true, booking_id: booking.booking_id, deal_id });
 });
