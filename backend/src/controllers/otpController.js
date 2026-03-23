@@ -55,8 +55,10 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
                ?? req.body?.ID 
                ?? req.body?.deal_id;
 
-  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809061102
-           ?? req.body?.UF_CRM_1773809061102 
+  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809025643
+
+           ?? req.body?.UF_CRM_1773809025643
+
            ?? req.body?.otp;
 
   if (!deal_id || isNaN(Number(deal_id))) {
@@ -83,7 +85,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
       {                                   // ✅ ID and fields are INSIDE the object
         ID: deal_id,
         fields: {
-          UF_CRM_1774009819822: "✅ Service Started."
+          UF_CRM_1773809061102: "✅ Service Started."
         }
       }
     );
@@ -107,8 +109,8 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
                ?? req.body?.ID
                ?? req.body?.deal_id;
 
-  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809130950
-           ?? req.body?.UF_CRM_1773809130950
+  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809108597
+           ?? req.body?.UF_CRM_1773809108597
            ?? req.body?.otp;
 
   if (!deal_id || isNaN(Number(deal_id))) {
@@ -131,7 +133,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
       ID: deal_id,
       fields: {
         STAGE_ID: "C1:WON",
-        UF_CRM_1774009860760: "🏁 Service Completed"
+        UF_CRM_1773809130950: "🏁 Service Completed"
       }
     });
   } catch (err) {
