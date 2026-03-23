@@ -88,7 +88,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
   if (booking.start_otp !== otp) {
     try {
       await axios.post(
-        `https://hedenahealthcare.bitrix24.in/rest/19/c45kf5jl8px2q10s/crm.deal.update.json`,
+        `https://hedenahealthcare.bitrix24.in/rest/19/7lacwaiegsop4736/crm.deal.update.json`,
         {
           ID: deal_id,
           fields: {
@@ -111,14 +111,15 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
   await booking.save();
 
   // ✅ Valid OTP — update Bitrix status to Verified
+  console.log("✅ Valid OTP — update Bitrix status to Verified")
   try {
     await axios.post(
-      `https://hedenahealthcare.bitrix24.in/rest/19/c45kf5jl8px2q10s/crm.deal.update.json`,
+      `https://hedenahealthcare.bitrix24.in/rest/19/7lacwaiegsop4736/crm.deal.update.json`,
       {
         ID: deal_id,
         fields: {
           UF_CRM_1774009819822: "Verified", // ✅ First OTP Validation Status
-          UF_CRM_1773128404473: new Date().toISOString() // Duty Start Time if needed
+       
         }
       }
     );
@@ -129,8 +130,21 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200, {}, "Service started"));
 });
 
+
+
+
+
+
+
+
+
+
+
+
 // 3️⃣ Verify Completion OTP
 export const verifyCompletionOTP = asyncHandler(async (req, res) => {
+
+  console.log("verifyCompletionOTP")
 
   if (req.body?.auth?.application_token !== "i8z8odtqwrmzkysz56mby1yvlpnut930") {
     throw new ApiError(403, "Unauthorized");
