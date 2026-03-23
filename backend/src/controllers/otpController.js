@@ -8,11 +8,11 @@ import { BITRIX_WEBHOOK, BITRIX_TOKEN } from "../config.js";
 
 // 1️⃣ Booking Created
 export const bookingCreated = asyncHandler(async (req, res) => {
-  if (req.body.auth?.application_token !== "1keq4jkmzxaw9pfjeqnp5mieb35jnilk") {
+  if (req.body.auth?.application_token !== "szjlk848jizh0uhwrpcc8psyxhiy3gp6") {
     throw new ApiError(403, "Unauthorized");
   }
 
-  console.log()
+  
 
   const data = req.body.data?.FIELDS || req.body.data;
   console.log("bookingCreated:-",data)
@@ -31,10 +31,10 @@ export const bookingCreated = asyncHandler(async (req, res) => {
     { upsert: true, new: true }
   );
 
-  await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json`, {
+  await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/zv1taqocnnm1m8m6/crm.deal.update.json`, {
     ID: deal_id,
     fields: {
-      UF_CRM_1773128404473: startOTP,
+      UF_CRM_1773809025643: startOTP,
       COMMENTS: `🔢 Start OTP generated for Deal ID: ${deal_id}`
     }
   });
@@ -44,12 +44,14 @@ export const bookingCreated = asyncHandler(async (req, res) => {
 
 // 2️⃣ Verify Start OTP
 export const verifyStartOTP = asyncHandler(async (req, res) => {
-  console.log(req.body)
-  const { deal_id, otp } = req.body;
+ 
 
-  if (req.body?.auth?.application_token !== "1mg3n9w7edjll06yxilumza1z3l5qrjz") {
+  if (req.body?.auth?.application_token !== "1keq4jkmzxaw9pfjeqnp5mieb35jnilk") {
     throw new ApiError(403, "Unauthorized");
   }
+
+ console.log(req.body)
+  const { deal_id, otp } = req.body;
 
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
   if (!booking) throw new ApiError(404, "Booking not found");
