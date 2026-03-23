@@ -94,7 +94,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
 
   try {
     await axios.post(
-      `https://hedenahealthcare.bitrix24.in/rest/19/v0hft63z4xe11s29/crm.deal.update.json`,
+      `https://hedenahealthcare.bitrix24.in/rest/19/c45kf5jl8px2q10s/crm.deal.update.json`,
       {
         ID: deal_id,
         fields: {
@@ -122,13 +122,19 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
                ?? req.body?.ID
                ?? req.body?.deal_id;
 
-  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809108597
-           ?? req.body?.UF_CRM_1773809108597
-           ?? req.body?.otp;
-
   if (!deal_id || isNaN(Number(deal_id))) {
     throw new ApiError(400, "Missing or invalid deal_id");
   }
+
+  // ✅ Fetch full deal from Bitrix to get OTP value
+  const dealRes = await axios.post(
+    `https://hedenahealthcare.bitrix24.in/rest/19/fx1brksmkfnt8j1x/crm.deal.get.json`,
+    { ID: deal_id }
+  );
+
+  const otp = dealRes.data?.result?.UF_CRM_1773809108597;
+  console.log("Completion OTP from Bitrix:", otp);
+
   if (!otp) {
     throw new ApiError(400, "Missing OTP");
   }
@@ -142,13 +148,16 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
   await booking.save();
 
   try {
-    await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`, {
-      ID: deal_id,
-      fields: {
-        STAGE_ID: "C1:WON",
-        UF_CRM_1773809130950: "🏁 Service Completed"
+    await axios.post(
+      `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
+      {
+        ID: deal_id,
+        fields: {
+          STAGE_ID: "C1:WON",
+          UF_CRM_1773809130950: "🏁 Service Completed"
+        }
       }
-    });
+    );
   } catch (err) {
     console.log("❌ Bitrix error:", err.message);
   }
