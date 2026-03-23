@@ -55,8 +55,8 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
                ?? req.body?.ID 
                ?? req.body?.deal_id;
 
-  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809025643
-           ?? req.body?.UF_CRM_1773809025643 
+  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809061102
+           ?? req.body?.UF_CRM_1773809061102 
            ?? req.body?.otp;
 
   if (!deal_id || isNaN(Number(deal_id))) {
@@ -96,10 +96,26 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
 
 // 3️⃣ Verify Completion OTP
 export const verifyCompletionOTP = asyncHandler(async (req, res) => {
-  const { deal_id, otp } = req.body;
 
-  if (req.body?.auth?.application_token !== "n0mak7pbxpk2ef0dk0wx9rtpqum76d7j") {
+  if (req.body?.auth?.application_token !== "i8z8odtqwrmzkysz56mby1yvlpnut930") {
     throw new ApiError(403, "Unauthorized");
+  }
+
+  console.log("Full body:", JSON.stringify(req.body, null, 2));
+
+  const deal_id = req.body?.data?.FIELDS?.ID
+               ?? req.body?.ID
+               ?? req.body?.deal_id;
+
+  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809130950
+           ?? req.body?.UF_CRM_1773809130950
+           ?? req.body?.otp;
+
+  if (!deal_id || isNaN(Number(deal_id))) {
+    throw new ApiError(400, "Missing or invalid deal_id");
+  }
+  if (!otp) {
+    throw new ApiError(400, "Missing OTP");
   }
 
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
@@ -111,11 +127,11 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
   await booking.save();
 
   try {
-    await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
+    await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`, {
       ID: deal_id,
       fields: {
         STAGE_ID: "C1:WON",
-        COMMENTS: "🏁 Service Completed"
+        UF_CRM_1774009860760: "🏁 Service Completed"
       }
     });
   } catch (err) {

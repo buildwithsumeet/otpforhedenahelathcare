@@ -60,7 +60,7 @@ const cronJob = cron.schedule("* * * * *", async () => {
 
         // 4. Update Bitrix using DEAL_ID
         try {
-          await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
+          await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/khl66brzilmeicwl/crm.deal.update.json`, {
             ID: booking.deal_id, // 🔥 Using deal_id for Bitrix
             fields: {
               UF_CRM_1773809108597: otp, // Your Completion OTP field
