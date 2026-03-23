@@ -44,19 +44,33 @@ export const bookingCreated = asyncHandler(async (req, res) => {
 
 // 2️⃣ Verify Start OTP
 export const verifyStartOTP = asyncHandler(async (req, res) => {
- 
 
   if (req.body?.auth?.application_token !== "1keq4jkmzxaw9pfjeqnp5mieb35jnilk") {
     throw new ApiError(403, "Unauthorized");
   }
 
- console.log(req.body)
-  const { deal_id, otp } = req.body;
+  console.log("Full body:", JSON.stringify(req.body, null, 2));
+
+  const deal_id = req.body?.data?.FIELDS?.ID 
+               ?? req.body?.ID 
+               ?? req.body?.deal_id;
+
+  const otp = req.body?.data?.FIELDS?.UF_CRM_1773809025643
+           ?? req.body?.UF_CRM_1773809025643 
+           ?? req.body?.otp;
+
+  if (!deal_id || isNaN(Number(deal_id))) {
+    throw new ApiError(400, "Missing or invalid deal_id");
+  }
+  if (!otp) {
+    throw new ApiError(400, "Missing OTP");
+  }
 
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
   if (!booking) throw new ApiError(404, "Booking not found");
   if (booking.start_otp !== otp) throw new ApiError(401, "Invalid OTP");
-  if (booking.status === "started") return res.json(new ApiResponse(200, {}, "Already started"));
+  if (booking.status === "started") 
+    return res.json(new ApiResponse(200, {}, "Already started"));
 
   booking.status = "started";
   booking.start_time = new Date();
@@ -64,12 +78,15 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
   await booking.save();
 
   try {
-    await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
-      ID: deal_id,
-      fields: {
-        COMMENTS: "✅ Service Started."
+    await axios.post(
+      `https://hedenahealthcare.bitrix24.in/rest/19/v0hft63z4xe11s29/crm.deal.update.json`,
+      {                                   // ✅ ID and fields are INSIDE the object
+        ID: deal_id,
+        fields: {
+          UF_CRM_1774009819822: "✅ Service Started."
+        }
       }
-    });
+    );
   } catch (err) {
     console.log("❌ Bitrix error:", err.message);
   }
