@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
-  booking_id: { 
-    type: Number, 
-   
-  },
   deal_id: { type: Number, unique: true },
 
   order_id: String,
