@@ -92,7 +92,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
         {
           ID: deal_id,
           fields: {
-            UF_CRM_1773809061102: "Invalid" // ❌ First OTP Validation Status
+            UF_CRM_1774009819822: "Invalid" // ❌ First OTP Validation Status
           }
         }
       );
@@ -117,7 +117,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
       {
         ID: deal_id,
         fields: {
-          UF_CRM_1773809061102: "Verified", // ✅ First OTP Validation Status
+          UF_CRM_1774009819822: "Verified", // ✅ First OTP Validation Status
           UF_CRM_1773128404473: new Date().toISOString() // Duty Start Time if needed
         }
       }
@@ -161,12 +161,30 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
 
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
   if (!booking) throw new ApiError(404, "Booking not found");
-  if (booking.completion_otp !== otp) throw new ApiError(401, "Invalid Completion OTP");
+
+  // ❌ Invalid OTP — update Bitrix End OTP validation Status to Invalid
+  if (booking.completion_otp !== otp) {
+    try {
+      await axios.post(
+        `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
+        {
+          ID: deal_id,
+          fields: {
+            UF_CRM_1774009860760: "Invalid" // ❌ End OTP validation Status
+          }
+        }
+      );
+    } catch (err) {
+      console.log("❌ Bitrix error on invalid:", err.message);
+    }
+    throw new ApiError(401, "Invalid Completion OTP");
+  }
 
   booking.status = "completed";
   booking.end_time = new Date();
   await booking.save();
 
+  // ✅ Valid OTP — update Bitrix to Verified + mark deal WON
   try {
     await axios.post(
       `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
@@ -174,7 +192,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
         ID: deal_id,
         fields: {
           STAGE_ID: "C1:WON",
-          UF_CRM_1773809130950: "🏁 Service Completed"
+          UF_CRM_1774009860760: "Verified" // ✅ End OTP validation Status
         }
       }
     );
