@@ -68,7 +68,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing or invalid deal_id");
   }
 
-  // ✅ Fetch full deal from Bitrix to get OTP field
+  // ✅ Fetch full deal from Bitrix to get OTP
   const dealRes = await axios.post(
     `https://hedenahealthcare.bitrix24.in/rest/19/kmj7mkb4krro0tke/crm.deal.get.json`,
     { ID: deal_id }
@@ -83,7 +83,25 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
 
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
   if (!booking) throw new ApiError(404, "Booking not found");
-  if (booking.start_otp !== otp) throw new ApiError(401, "Invalid OTP");
+
+  // ❌ Invalid OTP — update Bitrix status to Invalid
+  if (booking.start_otp !== otp) {
+    try {
+      await axios.post(
+        `https://hedenahealthcare.bitrix24.in/rest/19/c45kf5jl8px2q10s/crm.deal.update.json`,
+        {
+          ID: deal_id,
+          fields: {
+            UF_CRM_1773809061102: "Invalid" // ❌ First OTP Validation Status
+          }
+        }
+      );
+    } catch (err) {
+      console.log("❌ Bitrix error on invalid:", err.message);
+    }
+    throw new ApiError(401, "Invalid OTP");
+  }
+
   if (booking.status === "started")
     return res.json(new ApiResponse(200, {}, "Already started"));
 
@@ -92,13 +110,15 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
   booking.completion_otp_generated = false;
   await booking.save();
 
+  // ✅ Valid OTP — update Bitrix status to Verified
   try {
     await axios.post(
       `https://hedenahealthcare.bitrix24.in/rest/19/c45kf5jl8px2q10s/crm.deal.update.json`,
       {
         ID: deal_id,
         fields: {
-          UF_CRM_1773809061102: "✅ Service Started."
+          UF_CRM_1773809061102: "Verified", // ✅ First OTP Validation Status
+          UF_CRM_1773128404473: new Date().toISOString() // Duty Start Time if needed
         }
       }
     );
