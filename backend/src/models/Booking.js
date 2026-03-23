@@ -3,8 +3,7 @@ import mongoose from "mongoose";
 const bookingSchema = new mongoose.Schema({
   booking_id: { 
     type: Number, 
-    unique: true,
-    sparse: true  // ← Yeh add karo — null values ko unique check se skip karta hai
+   
   },
   deal_id: { type: Number, unique: true },
 

@@ -9,7 +9,7 @@ import { BITRIX_WEBHOOK, BITRIX_TOKEN } from "../config.js";
 // 1️⃣ Bitrix sends BOTH deal_id and booking_id to trigger Start OTP
 export const bookingCreated = asyncHandler(async (req, res) => {
   // Security Check
-  if (req.body.auth?.application_token !== BITRIX_TOKEN) {
+  if (req.body.auth?.application_token !== "1keq4jkmzxaw9pfjeqnp5mieb35jnilk") {
     throw new ApiError(403, "Unauthorized");
   }
 
@@ -36,7 +36,7 @@ export const bookingCreated = asyncHandler(async (req, res) => {
   );
 
   // Sync Start OTP back to Bitrix using deal_id
-  await axios.post(`${BITRIX_WEBHOOK}/crm.deal.update.json`, {
+  await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json`, {
     ID: deal_id,
     fields: {
       UF_CRM_1773128404473: startOTP, // Your Start OTP field
@@ -49,6 +49,8 @@ export const bookingCreated = asyncHandler(async (req, res) => {
 
 // 2️⃣ Technician verifies Start OTP using booking_id
 export const verifyStartOTP = asyncHandler(async (req, res) => {
+
+  console.log(req.body)
   const { booking_id, otp } = req.body;
 
   // App Security Token
