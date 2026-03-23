@@ -82,7 +82,7 @@ const bitrixPost = async (url, data, retries = 3) => {
     } catch (err) {
       console.log(`❌ Bitrix attempt ${i} failed:`, err.response?.status, err.message);
       if (i < retries) {
-        await new Promise(r => setTimeout(r, 1000 * i)); // 1s, 2s
+        await new Promise(r => setTimeout(r, 1000 * i));
       }
     }
   }
@@ -95,6 +95,9 @@ export const dealCreated = asyncHandler(async (req, res) => {
   if (req.body?.auth?.application_token !== "yvxw0jq6yy85wud4h11tclellumz7ip5") {
     return res.status(403).json({ message: "Unauthorized" });
   }
+
+  // ✅ Random delay to avoid simultaneous Bitrix hits with other webhooks
+  await new Promise(r => setTimeout(r, Math.random() * 1000));
 
   const dealId = Number(req.body?.data?.FIELDS?.ID);
   if (!dealId) {
@@ -113,14 +116,12 @@ export const dealCreated = asyncHandler(async (req, res) => {
   }
 
   const amount = Number(deal.OPPORTUNITY) || 0;
-
-  // ✅ Step 2: Create payment link
   const paymentLink = `${FRONTEND_URL}/pay?deal_id=${dealId}&amount=${amount}`;
 
-  // ✅ Small delay between get and update to avoid rate limit
+  // ✅ Small delay between get and update
   await new Promise(r => setTimeout(r, 500));
 
-  // ✅ Step 3: Update deal with payment link with retry
+  // ✅ Step 2: Update deal with payment link
   await bitrixPost(
     "https://hedenahealthcare.bitrix24.in/rest/19/qu4pw71ycvsk24d1/crm.deal.update.json",
     {
@@ -132,6 +133,5 @@ export const dealCreated = asyncHandler(async (req, res) => {
   );
 
   console.log("✅ Payment link updated in Bitrix:", paymentLink);
-
   res.json({ success: true, paymentLink });
 });
