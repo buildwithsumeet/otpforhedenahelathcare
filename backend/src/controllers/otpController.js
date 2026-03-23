@@ -12,32 +12,41 @@ export const bookingCreated = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized");
   }
 
-  
-
   const data = req.body.data?.FIELDS || req.body.data;
-  console.log("bookingCreated:-",data)
-   console.log("bookingCreated:-",req.body.data?.FIELDS)
+  console.log("bookingCreated:-", data);
+  console.log("bookingCreated:-", req.body.data?.FIELDS);
+
   const deal_id = Number(data?.DEAL_ID || data?.ID);
 
   if (!deal_id) {
     throw new ApiError(400, "deal_id required");
   }
 
+  // ✅ Check DB first — if OTP already exists, skip everything
+  const existingBooking = await Booking.findOne({ deal_id });
+  if (existingBooking?.start_otp) {
+    console.log(`⏭️ OTP already exists in DB for Deal ID: ${deal_id}, skipping`);
+    return res.json(new ApiResponse(200, { deal_id }, "OTP already exists, skipping"));
+  }
+
   const startOTP = generateOTP();
 
-  const booking = await Booking.findOneAndUpdate(
+  await Booking.findOneAndUpdate(
     { deal_id },
     { start_otp: startOTP, status: "pending" },
     { upsert: true, new: true }
   );
 
-  await axios.post("https://hedenahealthcare.bitrix24.in/rest/19/ty5623yxuzz25qsj/crm.deal.update.json", {
-    ID: deal_id,
-    fields: {
-      UF_CRM_1773809025643: startOTP,
-      COMMENTS: `🔢 Start OTP generated for Deal ID: ${deal_id}`
+  await axios.post(
+    "https://hedenahealthcare.bitrix24.in/rest/19/ty5623yxuzz25qsj/crm.deal.update.json",
+    {
+      ID: deal_id,
+      fields: {
+        UF_CRM_1773809025643: startOTP,
+        COMMENTS: `🔢 Start OTP generated for Deal ID: ${deal_id}`
+      }
     }
-  });
+  );
 
   return res.json(new ApiResponse(200, { deal_id, startOTP }, "OTP generated"));
 });
@@ -60,6 +69,9 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
            ?? req.body?.UF_CRM_1773809025643
 
            ?? req.body?.otp;
+
+           console.log(otp ,"--------")
+
 
   if (!deal_id || isNaN(Number(deal_id))) {
     throw new ApiError(400, "Missing or invalid deal_id");

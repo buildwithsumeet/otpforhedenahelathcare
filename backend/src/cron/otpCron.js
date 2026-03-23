@@ -3,15 +3,12 @@ import mongoose from "mongoose";
 import Booking from "../models/Booking.js";
 import { generateOTP } from "../utils/generateOTP.js";
 import axios from "axios";
-import { BITRIX_WEBHOOK } from "../config.js";
 
 console.log("✅ Completion OTP Cron module loaded");
 
-// ⏰ Runs every 1 minute
 const cronJob = cron.schedule("* * * * *", async () => {
   console.log("⏰ Cron checking for 10-min threshold...");
 
-  // 1. Check if DB is connected
   if (mongoose.connection.readyState !== 1) {
     console.log("❌ DB not connected, skipping cron");
     return;
@@ -19,65 +16,64 @@ const cronJob = cron.schedule("* * * * *", async () => {
 
   try {
     const now = new Date();
+    const tenMinutesAgo = new Date(now - 10 * 60 * 1000);
 
-    // 2. Find bookings started but without Completion OTP
-    // Filter ensures both IDs exist before processing
+    // ✅ DB check — bookings with existing completion_otp are never fetched
     const bookings = await Booking.find({
       status: "started",
       completion_otp_generated: false,
-      start_time: { $ne: null },
+      completion_otp: { $in: [null, undefined, ""] }, // ✅ Skip if OTP already in DB
+      start_time: { $ne: null, $lte: tenMinutesAgo },
       deal_id: { $ne: null },
       booking_id: { $ne: null }
     });
 
+    if (bookings.length === 0) {
+      console.log("✅ No pending bookings found");
+      return;
+    }
+
     for (const booking of bookings) {
-      const startTime = new Date(booking.start_time);
-      const diff = now - startTime;
+      const otp = generateOTP();
 
-      // ✅ 10 minute delay check
-      if (diff >= 10 * 60 * 1000) {
-        const otp = generateOTP();
+      // ✅ Atomic update — double check at DB level before writing
+      const updated = await Booking.findOneAndUpdate(
+        {
+          _id: booking._id,
+          completion_otp_generated: false,
+          completion_otp: { $in: [null, undefined, ""] } // ✅ Final guard
+        },
+        {
+          completion_otp: otp,
+          completion_otp_generated: true,
+          completion_otp_created_at: new Date()
+        },
+        { new: true }
+      );
 
-        // 3. Atomic Update to prevent duplicate generation
-        const updated = await Booking.findOneAndUpdate(
+      if (!updated) {
+        console.log(`⏭️ Skipping Deal ${booking.deal_id} — OTP already exists in DB`);
+        continue;
+      }
+
+      console.log(`🔢 OTP Generated: ${otp} for Booking: ${booking.booking_id}`);
+
+      try {
+        await axios.post(
+          `https://hedenahealthcare.bitrix24.in/rest/19/khl66brzilmeicwl/crm.deal.update.json`,
           {
-            _id: booking._id,
-            completion_otp_generated: false // Re-verify flag inside query
-          },
-          {
-            completion_otp: otp,
-            completion_otp_generated: true,
-            // Added this field to your model tracking
-            completion_otp_created_at: new Date() 
-          },
-          { new: true }
-        );
-
-        // If another instance picked it up first, skip
-        if (!updated) continue;
-
-        console.log(`🔢 OTP Generated: ${otp} for Booking: ${booking.booking_id}`);
-
-        // 4. Update Bitrix using DEAL_ID
-        try {
-          await axios.post(`https://hedenahealthcare.bitrix24.in/rest/19/khl66brzilmeicwl/crm.deal.update.json`, {
-            ID: booking.deal_id, // 🔥 Using deal_id for Bitrix
+            ID: booking.deal_id,
             fields: {
-              UF_CRM_1773809108597: otp, // Your Completion OTP field
+              UF_CRM_1773809108597: otp,
               COMMENTS: `🏁 Completion OTP ${otp} generated for Booking ID: ${booking.booking_id}`
             }
-          });
+          }
+        );
+        console.log(`✅ Bitrix Deal ${booking.deal_id} updated successfully`);
 
-          console.log(`✅ Bitrix Deal ${booking.deal_id} updated successfully`);
-
-        } catch (err) {
-          console.error(`❌ Bitrix Error for Deal ${booking.deal_id}:`, err.response?.data || err.message);
-
-          // 🔁 Rollback DB flag so it tries again in the next minute if Bitrix failed
-          await Booking.findByIdAndUpdate(booking._id, {
-            completion_otp_generated: false
-          });
-        }
+      } catch (err) {
+        console.error(`❌ Bitrix Error for Deal ${booking.deal_id}:`, err.response?.data || err.message);
+        console.log(`⚠️ OTP ${otp} saved in DB but Bitrix update failed for Deal ${booking.deal_id}`);
       }
     }
   } catch (error) {
