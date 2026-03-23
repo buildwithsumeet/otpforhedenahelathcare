@@ -12,8 +12,11 @@ export const bookingCreated = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized");
   }
 
+  console.log()
+
   const data = req.body.data?.FIELDS || req.body.data;
-  console.log(data)
+  console.log("bookingCreated:-",data)
+   console.log("bookingCreated:-",req.body.data?.FIELDS)
   const deal_id = Number(data?.DEAL_ID || data?.ID);
 
   if (!deal_id) {

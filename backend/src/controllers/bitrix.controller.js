@@ -22,7 +22,7 @@ export const dealCreated = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid Deal ID" });
   }
 
-  console.log("Deal ID:", dealId);
+  // console.log("Deal ID:", dealId);
 
   // 🔥 Step 1: Get full deal details
   const dealResponse = await axios.post(
@@ -33,15 +33,15 @@ export const dealCreated = asyncHandler(async (req, res) => {
   const deal = dealResponse.data.result;
 
   if (!deal) {
-    console.log("Deal fetch failed:", dealResponse.data);
+    // console.log("Deal fetch failed:", dealResponse.data);
     return res.status(404).json({ message: "Deal not found" });
   }
 
   const amount = Number(deal.OPPORTUNITY) || 0;
 
-  console.log("💰 Amount:", amount);
-  console.log("Deal Title:", deal.TITLE);
-  console.log("Stage:", deal.STAGE_ID);
+  // console.log("💰 Amount:", amount);
+  // console.log("Deal Title:", deal.TITLE);
+  // console.log("Stage:", deal.STAGE_ID);
   // console.log("Full deal object:", deal); // ← debugging ke liye (sab fields dekhne ke liye)
 
   // 🔥 Step 2: Create frontend payment link
@@ -59,7 +59,7 @@ export const dealCreated = asyncHandler(async (req, res) => {
     }
   );
 
-  console.log("✅ Payment link updated in Bitrix:", paymentLink);
+  // console.log("✅ Payment link updated in Bitrix:", paymentLink);
 
   res.json({ success: true, paymentLink });
 });
