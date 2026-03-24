@@ -73,20 +73,35 @@ import { generateOTP } from "../utils/generateOTP.js"
 import axios from "axios"
 import { BITRIX_WEBHOOK, BITRIX_TOKEN, FRONTEND_URL } from "../config.js"
 
-// ✅ Retry helper for Bitrix 503s
-const bitrixPost = async (url, data, retries = 3) => {
+// ✅ Better Retry helper for Bitrix 502/503s with Exponential Backoff
+const bitrixPost = async (url, data, retries = 5) => {
   for (let i = 1; i <= retries; i++) {
     try {
       const res = await axios.post(url, data);
       return res;
     } catch (err) {
-      console.log(`❌ Bitrix attempt ${i} failed:`, err.response?.status, err.message);
+      const status = err.response?.status;
+      const message = err.message;
+
+      console.log(`❌ Bitrix attempt ${i} failed:`, status || "No Status", message);
+
+      // If it's a client error (4xx) other than Rate Limit (429), don't retry.
+      // Data is probably wrong, so retrying won't fix it.
+      if (status >= 400 && status < 500 && status !== 429) {
+        console.log("🛑 Client error detected. Skipping retries.");
+        break;
+      }
+
       if (i < retries) {
-        await new Promise(r => setTimeout(r, 1000 * i));
+        // Exponential backoff: 2s, 4s, 8s, 16s... gives server more time to recover
+        const waitTime = Math.pow(2, i) * 1000;
+        console.log(`⏳ Waiting ${waitTime / 1000}s before next attempt...`);
+        await new Promise((r) => setTimeout(r, waitTime));
       }
     }
   }
   console.log(`⚠️ Bitrix update failed after ${retries} attempts`);
+  return null;
 };
 
 export const dealCreated = asyncHandler(async (req, res) => {

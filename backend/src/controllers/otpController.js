@@ -221,17 +221,21 @@ import { generateOTP } from "../utils/generateOTP.js";
 import axios from "axios";
 
 // ✅ Retry helper
-const bitrixPost = async (url, data, retries = 3) => {
+const bitrixPost = async (url, data, retries = 5) => {
   for (let i = 1; i <= retries; i++) {
     try {
       const res = await axios.post(url, data);
       return res;
     } catch (err) {
       console.log(`❌ Bitrix attempt ${i} failed:`, err.response?.status, err.message);
-      if (i < retries) await new Promise(r => setTimeout(r, 1000 * i));
+      if (i < retries) {
+        const delay = 2000 * i; // 2s, 4s, 6s, 8s
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
     }
   }
-  console.log(`⚠️ Bitrix failed after ${retries} attempts`);
+  console.log(`⚠️ Bitrix update failed after ${retries} attempts`);
 };
 
 // 1️⃣ Booking Created
@@ -340,7 +344,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
       ID: deal_id,
       fields: {
         UF_CRM_1773809061102 : "Verified",
-        UF_CRM_1773128404473: new Date().toISOString()
+       
       }
     }
   );
