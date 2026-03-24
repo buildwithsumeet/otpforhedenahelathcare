@@ -291,6 +291,11 @@ export const bookingCreated = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200, { deal_id, startOTP }, "OTP generated"));
 });
 
+
+
+
+
+
 // 2️⃣ Verify Start OTP
 export const verifyStartOTP = asyncHandler(async (req, res) => {
   if (req.body?.auth?.application_token !== "1keq4jkmzxaw9pfjeqnp5mieb35jnilk") {
@@ -307,60 +312,58 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing or invalid deal_id");
   }
 
-  // ✅ Check DB state first — skip unnecessary Bitrix calls
+  // ✅ Fetch OTP from Database
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
   if (!booking) {
-    console.log(`⏭️ No booking found for Deal ID: ${deal_id}, skipping`);
-    return res.json(new ApiResponse(200, {}, "No booking found, skipping"));
-  }
-  if (booking.status === "started" || booking.status === "completed") {
-    console.log(`⏭️ Deal ${deal_id} already processed, skipping`);
-    return res.json(new ApiResponse(200, {}, "Already processed, skipping"));
+    throw new ApiError(404, "Booking not found");
   }
 
-  // ✅ Now fetch OTP from Bitrix
+  if (booking.status === "started" || booking.status === "completed") {
+    return res.json(new ApiResponse(200, {}, "Already processed"));
+  }
+
+  // ✅ Now fetch OTP from Bitrix (Entered by user/admin)
   const dealRes = await bitrixPost(
     `https://hedenahealthcare.bitrix24.in/rest/19/kmj7mkb4krro0tke/crm.deal.get.json`,
     { ID: deal_id }
   );
 
   if (!dealRes) {
-    throw new ApiError(503, "Bitrix server unavailable, try again later");
+    throw new ApiError(503, "Bitrix server unavailable");
   }
 
-  const otp = dealRes?.data?.result?.UF_CRM_1773809025643;
-  console.log("OTP from Bitrix:", otp);
+  const enteredOtp = dealRes?.data?.result?.UF_CRM_1774328822365; // User confirmation field
+  console.log("OTP Check -> DB:", booking.start_otp, "Bitrix Entered:", enteredOtp);
 
-  if (!otp) {
-    throw new ApiError(400, "Missing OTP");
+  if (!enteredOtp) {
+    return res.json(new ApiResponse(200, {}, "OTP field is empty in Bitrix"));
   }
 
   // ❌ Invalid OTP
-  if (booking.start_otp !== otp) {
+  if (booking.start_otp !== enteredOtp) {
     await bitrixPost(
       `https://hedenahealthcare.bitrix24.in/rest/19/7lacwaiegsop4736/crm.deal.update.json`,
       {
         ID: deal_id,
-        fields: { UF_CRM_1774328840737 : "Invalid" }
+        fields: { UF_CRM_1774328840737: "Invalid" }
       }
     );
     throw new ApiError(401, "Invalid OTP");
   }
 
+  // ✅ Valid OTP - Update DB first
   booking.status = "started";
   booking.start_time = new Date();
   booking.completion_otp_generated = false;
   await booking.save();
 
-  // ✅ Valid OTP
-  console.log("✅ Valid OTP — updating Bitrix status to Verified");
+  console.log("✅ OTP Matched — updating Bitrix status to Verified");
   await bitrixPost(
     `https://hedenahealthcare.bitrix24.in/rest/19/7lacwaiegsop4736/crm.deal.update.json`,
     {
       ID: deal_id,
       fields: {
-        UF_CRM_1774328840737 : "Verified",
-       
+        UF_CRM_1774328840737: "Verified",
       }
     }
   );
@@ -386,40 +389,37 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing or invalid deal_id");
   }
 
-  // ✅ Check DB state first — skip if no completion OTP or already done
+  // ✅ Check DB state
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
   if (!booking) {
-    console.log(`⏭️ No booking found for Deal ID: ${deal_id}, skipping`);
-    return res.json(new ApiResponse(200, {}, "No booking found, skipping"));
+    throw new ApiError(404, "Booking not found");
   }
   if (booking.status === "completed") {
-    console.log(`⏭️ Deal ${deal_id} already completed, skipping`);
-    return res.json(new ApiResponse(200, {}, "Already completed, skipping"));
+    return res.json(new ApiResponse(200, {}, "Already completed"));
   }
   if (!booking.completion_otp) {
-    console.log(`⏭️ No completion OTP in DB for Deal ID: ${deal_id}, skipping`);
-    return res.json(new ApiResponse(200, {}, "No completion OTP yet, skipping")); // ✅ stops 503
+    return res.json(new ApiResponse(200, {}, "Completion OTP not generated yet"));
   }
 
-  // ✅ Now fetch OTP from Bitrix
+  // ✅ Now fetch user entered OTP from Bitrix
   const dealRes = await bitrixPost(
     `https://hedenahealthcare.bitrix24.in/rest/19/fx1brksmkfnt8j1x/crm.deal.get.json`,
     { ID: deal_id }
   );
 
   if (!dealRes) {
-    throw new ApiError(503, "Bitrix server unavailable, try again later");
+    throw new ApiError(503, "Bitrix server unavailable");
   }
 
-  const otp = dealRes?.data?.result?.UF_CRM_1773809108597;
-  console.log("Completion OTP from Bitrix:", otp);
+  const enteredOtp = dealRes?.data?.result?.UF_CRM_1774328859880; // Completion confirmation field
+  console.log("End OTP Check -> DB:", booking.completion_otp, "Bitrix Entered:", enteredOtp);
 
-  if (!otp) {
-    throw new ApiError(400, "Missing OTP");
+  if (!enteredOtp) {
+    return res.json(new ApiResponse(200, {}, "Completion OTP field is empty in Bitrix"));
   }
 
   // ❌ Invalid OTP
-  if (booking.completion_otp !== otp) {
+  if (booking.completion_otp !== enteredOtp) {
     await bitrixPost(
       `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
       {
@@ -430,11 +430,11 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid Completion OTP");
   }
 
+  // ✅ Valid OTP
   booking.status = "completed";
   booking.end_time = new Date();
   await booking.save();
 
-  // ✅ Valid OTP
   await bitrixPost(
     `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
     {
@@ -442,7 +442,6 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
       fields: {
         STAGE_ID: "C1:WON",
         UF_CRM_1774328872596: "Verified",
-       
       }
     }
   );
