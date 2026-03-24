@@ -6,6 +6,34 @@ import axios from "axios";
 
 console.log("✅ Completion OTP Cron module loaded");
 
+// ✅ Better Retry helper for Bitrix 502/503s with Exponential Backoff
+const bitrixPost = async (url, data, retries = 5) => {
+  for (let i = 1; i <= retries; i++) {
+    try {
+      const res = await axios.post(url, data);
+      return res;
+    } catch (err) {
+      const status = err.response?.status;
+      const message = err.message;
+
+      console.log(`❌ Bitrix attempt ${i} failed:`, status || "No Status", message);
+
+      if (status >= 400 && status < 500 && status !== 429) {
+        console.log("🛑 Client error detected. Skipping retries.");
+        break;
+      }
+
+      if (i < retries) {
+        const waitTime = Math.pow(2, i) * 1000;
+        console.log(`⏳ Waiting ${waitTime / 1000}s before next attempt...`);
+        await new Promise((r) => setTimeout(r, waitTime));
+      }
+    }
+  }
+  console.log(`⚠️ Bitrix update failed after ${retries} attempts`);
+  return null;
+};
+
 const cronJob = cron.schedule("* * * * *", async () => {
   console.log("⏰ Cron checking for 10-min threshold...");
 
@@ -16,13 +44,12 @@ const cronJob = cron.schedule("* * * * *", async () => {
 
   try {
     const now = new Date();
-    const tenMinutesAgo = new Date(now - 10 * 60 * 1000);
+   const tenMinutesAgo = new Date(now - 1 * 60 * 1000)
 
-    // ✅ DB check — bookings with existing completion_otp are never fetched
     const bookings = await Booking.find({
       status: "started",
       completion_otp_generated: false,
-      completion_otp: { $in: [null, undefined, ""] }, // ✅ Skip if OTP already in DB
+      completion_otp: { $in: [null, undefined, ""] },
       start_time: { $ne: null, $lte: tenMinutesAgo },
       deal_id: { $ne: null },
       booking_id: { $ne: null }
@@ -36,12 +63,11 @@ const cronJob = cron.schedule("* * * * *", async () => {
     for (const booking of bookings) {
       const otp = generateOTP();
 
-      // ✅ Atomic update — double check at DB level before writing
       const updated = await Booking.findOneAndUpdate(
         {
           _id: booking._id,
           completion_otp_generated: false,
-          completion_otp: { $in: [null, undefined, ""] } // ✅ Final guard
+          completion_otp: { $in: [null, undefined, ""] }
         },
         {
           completion_otp: otp,
@@ -58,23 +84,18 @@ const cronJob = cron.schedule("* * * * *", async () => {
 
       console.log(`🔢 OTP Generated: ${otp} for Booking: ${booking.booking_id}`);
 
-      try {
-        await axios.post(
-          `https://hedenahealthcare.bitrix24.in/rest/19/khl66brzilmeicwl/crm.deal.update.json`,
-          {
-            ID: booking.deal_id,
-            fields: {
-              UF_CRM_1773809108597: otp,
-              COMMENTS: `🏁 Completion OTP ${otp} generated for Booking ID: ${booking.booking_id}`
-            }
+      // ✅ Use bitrixPost for reliable update
+      await bitrixPost(
+        `https://hedenahealthcare.bitrix24.in/rest/19/khl66brzilmeicwl/crm.deal.update.json`,
+        {
+          ID: booking.deal_id,
+          fields: {
+            UF_CRM_1773809108597: otp,
+            COMMENTS: `🏁 Completion OTP ${otp} generated for Booking ID: ${booking.booking_id}`
           }
-        );
-        console.log(`✅ Bitrix Deal ${booking.deal_id} updated successfully`);
-
-      } catch (err) {
-        console.error(`❌ Bitrix Error for Deal ${booking.deal_id}:`, err.response?.data || err.message);
-        console.log(`⚠️ OTP ${otp} saved in DB but Bitrix update failed for Deal ${booking.deal_id}`);
-      }
+        }
+      );
+      console.log(`✅ Bitrix sync attempted for Deal ${booking.deal_id}`);
     }
   } catch (error) {
     console.error("❌ General Cron Error:", error.message);

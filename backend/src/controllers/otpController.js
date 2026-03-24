@@ -371,6 +371,13 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200, {}, "Service started"));
 });
 
+
+
+
+
+
+
+
 // 3️⃣ Verify Completion OTP
 export const verifyCompletionOTP = asyncHandler(async (req, res) => {
   console.log("verifyCompletionOTP");
@@ -411,7 +418,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
     throw new ApiError(503, "Bitrix server unavailable");
   }
 
-  const enteredOtp = dealRes?.data?.result?.UF_CRM_1774328859880; // Completion confirmation field
+  const enteredOtp = dealRes?.data?.result?.UF_CRM_1773809130950; // Completion confirmation field
   console.log("End OTP Check -> DB:", booking.completion_otp, "Bitrix Entered:", enteredOtp);
 
   if (!enteredOtp) {
@@ -424,7 +431,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
       `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
       {
         ID: deal_id,
-        fields: { UF_CRM_1774328872596: "Invalid" }
+        fields: {  UF_CRM_1774328872596: "Invalid" }
       }
     );
     throw new ApiError(401, "Invalid Completion OTP");
@@ -441,7 +448,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
       ID: deal_id,
       fields: {
         STAGE_ID: "C1:WON",
-        UF_CRM_1774328872596: "Verified",
+         UF_CRM_1774328872596: "Verified",
       }
     }
   );
