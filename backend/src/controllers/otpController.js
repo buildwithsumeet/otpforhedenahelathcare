@@ -220,22 +220,34 @@ import Booking from "../models/Booking.js";
 import { generateOTP } from "../utils/generateOTP.js";
 import axios from "axios";
 
-// ✅ Retry helper
+// ✅ Better Retry helper for Bitrix 502/503s with Exponential Backoff
 const bitrixPost = async (url, data, retries = 5) => {
   for (let i = 1; i <= retries; i++) {
     try {
       const res = await axios.post(url, data);
       return res;
     } catch (err) {
-      console.log(`❌ Bitrix attempt ${i} failed:`, err.response?.status, err.message);
+      const status = err.response?.status;
+      const message = err.message;
+
+      console.log(`❌ Bitrix attempt ${i} failed:`, status || "No Status", message);
+
+      // If it's a client error (4xx) other than Rate Limit (429), don't retry.
+      if (status >= 400 && status < 500 && status !== 429) {
+        console.log("🛑 Client error detected. Skipping retries.");
+        break;
+      }
+
       if (i < retries) {
-        const delay = 2000 * i; // 2s, 4s, 6s, 8s
-        console.log(`⏳ Retrying in ${delay}ms...`);
-        await new Promise(r => setTimeout(r, delay));
+        // Exponential backoff: 2s, 4s, 8s, 16s...
+        const waitTime = Math.pow(2, i) * 1000;
+        console.log(`⏳ Waiting ${waitTime / 1000}s before next attempt...`);
+        await new Promise((r) => setTimeout(r, waitTime));
       }
     }
   }
   console.log(`⚠️ Bitrix update failed after ${retries} attempts`);
+  return null;
 };
 
 // 1️⃣ Booking Created
@@ -311,6 +323,10 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
     `https://hedenahealthcare.bitrix24.in/rest/19/kmj7mkb4krro0tke/crm.deal.get.json`,
     { ID: deal_id }
   );
+
+  if (!dealRes) {
+    throw new ApiError(503, "Bitrix server unavailable, try again later");
+  }
 
   const otp = dealRes?.data?.result?.UF_CRM_1773809025643;
   console.log("OTP from Bitrix:", otp);
@@ -390,6 +406,10 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
     `https://hedenahealthcare.bitrix24.in/rest/19/fx1brksmkfnt8j1x/crm.deal.get.json`,
     { ID: deal_id }
   );
+
+  if (!dealRes) {
+    throw new ApiError(503, "Bitrix server unavailable, try again later");
+  }
 
   const otp = dealRes?.data?.result?.UF_CRM_1773809108597;
   console.log("Completion OTP from Bitrix:", otp);
