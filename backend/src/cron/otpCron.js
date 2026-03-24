@@ -51,8 +51,8 @@ const cronJob = cron.schedule("* * * * *", async () => {
       completion_otp_generated: false,
       completion_otp: { $in: [null, undefined, ""] },
       start_time: { $ne: null, $lte: tenMinutesAgo },
-      deal_id: { $ne: null },
-      booking_id: { $ne: null }
+      deal_id: { $ne: null }
+     
     });
 
     if (bookings.length === 0) {
