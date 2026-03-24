@@ -262,6 +262,22 @@ export const bookingCreated = asyncHandler(async (req, res) => {
   const deal_id = Number(data?.DEAL_ID || data?.ID);
   if (!deal_id) throw new ApiError(400, "deal_id required");
 
+  // 🔥 Step 0: Check Payment Status in Bitrix before OTP generation
+  const dealRes = await bitrixPost(
+    `https://hedenahealthcare.bitrix24.in/rest/19/thzklp3t5hc231n4/crm.deal.get.json`,
+    { ID: deal_id }
+  );
+
+  const dealFields = dealRes?.data?.result;
+  const isPaid = dealFields?.UF_CRM_1773904189668 === "PAID";
+  const hasPaymentId = !!dealFields?.UF_CRM_1773902195825;
+  
+
+  if (!isPaid || !hasPaymentId) {
+    console.log(`⏹️ Skipping OTP for Deal ${deal_id}: Payment not verified (Paid: ${isPaid}, PaymentID: ${hasPaymentId})`);
+    return res.json(new ApiResponse(200, { deal_id }, "Payment not completed in Bitrix, skipping OTP generation"));
+  }
+
   // ✅ Check DB first
   const existingBooking = await Booking.findOne({ deal_id });
   if (existingBooking?.start_otp) {
