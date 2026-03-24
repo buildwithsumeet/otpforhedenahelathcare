@@ -332,7 +332,7 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
     throw new ApiError(503, "Bitrix server unavailable");
   }
 
-  const enteredOtp = dealRes?.data?.result?.UF_CRM_1774328822365; // User confirmation field
+  const enteredOtp = dealRes?.data?.result?.UF_CRM_1773809061102; // User confirmation field
   console.log("OTP Check -> DB:", booking.start_otp, "Bitrix Entered:", enteredOtp);
 
   if (!enteredOtp) {
