@@ -1,0 +1,39 @@
+name: Deploy to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main  # Jab aap 'main' branch pe push karenge tab deploy hoga
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            # 1. Project Folder mein jaana
+            cd /root/otpforhedenahelathcare
+            
+            # 2. Latest code pull karna
+            git pull origin main
+            
+            # 3. Backend Update (npm install & restart)
+            cd backend
+            npm install
+            # Sabse pehle backend process ko restart karein (agar nahi hai toh start karein)
+            pm2 restart all || pm2 start src/index.js --name "otp-backend"
+            
+            # 4. Frontend Update (Agar client building ki zaroorat hai)
+            cd ../client
+            npm install
+            npm run build
