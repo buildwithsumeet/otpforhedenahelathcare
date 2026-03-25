@@ -119,7 +119,7 @@
 //         ID: deal_id,
 //         fields: {
 //           UF_CRM_1774009819822: "Verified", // ✅ First OTP Validation Status
-       
+
 //         }
 //       }
 //     );
@@ -219,6 +219,13 @@ import ApiResponse from "../utils/ApiResponse.js";
 import Booking from "../models/Booking.js";
 import { generateOTP } from "../utils/generateOTP.js";
 import axios from "axios";
+import Razorpay from "razorpay";
+import { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } from "../config.js";
+
+const razorpay = new Razorpay({
+  key_id: RAZORPAY_KEY_ID,
+  key_secret: RAZORPAY_KEY_SECRET,
+});
 
 // ✅ Better Retry helper for Bitrix 502/503s with Exponential Backoff
 const bitrixPost = async (url, data, retries = 5) => {
@@ -271,7 +278,7 @@ export const bookingCreated = asyncHandler(async (req, res) => {
   const dealFields = dealRes?.data?.result;
   const isPaid = dealFields?.UF_CRM_1773904189668 === "PAID";
   const hasPaymentId = !!dealFields?.UF_CRM_1773902195825;
-  
+
 
   if (!isPaid || !hasPaymentId) {
     console.log(`⏹️ Skipping OTP for Deal ${deal_id}: Payment not verified (Paid: ${isPaid}, PaymentID: ${hasPaymentId})`);
@@ -321,8 +328,8 @@ export const verifyStartOTP = asyncHandler(async (req, res) => {
   console.log("Full body:", JSON.stringify(req.body, null, 2));
 
   const deal_id = req.body?.data?.FIELDS?.ID
-               ?? req.body?.ID
-               ?? req.body?.deal_id;
+    ?? req.body?.ID
+    ?? req.body?.deal_id;
 
   if (!deal_id || isNaN(Number(deal_id))) {
     throw new ApiError(400, "Missing or invalid deal_id");
@@ -405,8 +412,8 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
   console.log("Full body:", JSON.stringify(req.body, null, 2));
 
   const deal_id = req.body?.data?.FIELDS?.ID
-               ?? req.body?.ID
-               ?? req.body?.deal_id;
+    ?? req.body?.ID
+    ?? req.body?.deal_id;
 
   if (!deal_id || isNaN(Number(deal_id))) {
     throw new ApiError(400, "Missing or invalid deal_id");
@@ -447,7 +454,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
       `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
       {
         ID: deal_id,
-        fields: {  UF_CRM_1774328872596: "Invalid" }
+        fields: { UF_CRM_1774328872596: "Invalid" }
       }
     );
     throw new ApiError(401, "Invalid Completion OTP");
@@ -464,10 +471,119 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
       ID: deal_id,
       fields: {
         STAGE_ID: "C1:WON",
-         UF_CRM_1774328872596: "Verified",
+        UF_CRM_1774328872596: "Verified",
       }
     }
   );
 
   return res.json(new ApiResponse(200, {}, "Work completed"));
 });
+
+
+
+
+
+
+
+
+
+
+export const payout = asyncHandler(async (req, res) => {
+  const data = req.body.data?.FIELDS || req.body.data;
+  const deal_id = Number(data?.DEAL_ID || data?.ID);
+
+  if (!deal_id) throw new ApiError(400, "deal_id required");
+
+  // 🔥 Fetch Deal Details from Bitrix
+  const dealRes = await bitrixPost(
+    `https://hedenahealthcare.bitrix24.in/rest/19/ax80r2sjrys1j62e/crm.deal.get.json`,
+    { ID: deal_id }
+  );
+
+  const dealFields = dealRes?.data?.result;
+  if (!dealFields) throw new ApiError(404, "Deal not found in Bitrix");
+
+  // ✅ Check if UF_CRM_1774328872596 (Completion Confirmation) is filled/Verified
+  const isVerified = dealFields?.UF_CRM_1774328872596 === "Verified";
+
+  if (!isVerified) {
+    console.log(`⏹️ Skipping Payout for Deal ${deal_id}: Completion not verified yet.`);
+    return res.json(new ApiResponse(200, { deal_id }, "Completion not verified, skipping payout"));
+  }
+
+  // 🔥 RAZORPAY PAYOUT LOGIC
+  console.log("🚀 Starting Razorpay Payout Process...");
+  let payoutResponse = { status: "Pending", id: "N/A" };
+
+  try {
+    const accHolderName = dealFields?.UF_CRM_1774431276470;
+    const accNumber = dealFields?.UF_CRM_1771310802862;
+    const ifscCode = dealFields?.UF_CRM_1771310816536;
+    const amount = Number(dealFields?.OPPORTUNITY) || 0;
+
+    if (accHolderName && accNumber && ifscCode && amount > 0) {
+      console.log(`💸 Processing Payout of ${amount} to ${accHolderName}`);
+
+      // 1. Create Contact
+      const contact = await razorpay.contacts.create({
+        name: accHolderName,
+        type: "vendor",
+        reference_id: `DEAL_${deal_id}`,
+      });
+
+      // 2. Create Fund Account
+      const fundAccount = await razorpay.fundAccounts.create({
+        account_type: "bank_account",
+        contact_id: contact.id,
+        bank_account: {
+          name: accHolderName,
+          ifsc: ifscCode,
+          account_number: accNumber,
+        },
+      });
+
+      // 3. Create Payout
+      const payoutResult = await razorpay.payouts.create({
+        account_number: "2323230037328637", // ⚠️ Replace with your RazorpayX Account Number
+        fund_account_id: fundAccount.id,
+        amount: amount * 100, // paise
+        currency: "INR",
+        mode: "IMPS",
+        purpose: "payout",
+        queue_if_low_balance: true,
+        reference_id: `DEAL_PAYOUT_${deal_id}`,
+      });
+
+      payoutResponse = {
+        status: payoutResult.status,
+        id: payoutResult.id,
+        utr: payoutResult.utr || "Pending",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      };
+    } else {
+      payoutResponse.status = "Failed: Missing Bank Details or Amount";
+    }
+  } catch (error) {
+    console.error("❌ Payout Error:", error.message);
+    payoutResponse.status = `Error: ${error.message}`;
+  }
+
+  // ✅ Update Bitrix with Payout Results
+  await bitrixPost(
+    `https://hedenahealthcare.bitrix24.in/rest/19/lihlnekkbw0tc1rs/crm.deal.update.json`,
+    {
+      ID: deal_id,
+      fields: {
+        UF_CRM_1774430784298: payoutResponse.status,      // Payout Status
+        UF_CRM_1774430815306: payoutResponse.id,          // Razorpay Payout ID
+        UF_CRM_1774430836931: payoutResponse.utr || "",   // Payout UTR
+        UF_CRM_1774430864770: payoutResponse.amount || 0, // Payout Amount
+        UF_CRM_1774430925333: payoutResponse.timestamp || "", // Payout Timestamp
+      },
+    }
+  );
+
+  return res.json(new ApiResponse(200, { payout: payoutResponse }, "Payout process finished"));
+});
+
