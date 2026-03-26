@@ -409,7 +409,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized");
   }
 
-  console.log("Full body:", JSON.stringify(req.body, null, 2));
+  // console.log("Full body:", JSON.stringify(req.body, null, 2));
 
   const deal_id = req.body?.data?.FIELDS?.ID
     ?? req.body?.ID
@@ -546,7 +546,7 @@ export const payout = asyncHandler(async (req, res) => {
       const payoutResult = await razorpay.payouts.create({
         account_number: "2323230037328637", // ⚠️ Replace with your RazorpayX Account Number
         fund_account_id: fundAccount.id,
-        amount: amount * 100, // paise
+        amount: amount, // paise
         currency: "INR",
         mode: "IMPS",
         purpose: "payout",
