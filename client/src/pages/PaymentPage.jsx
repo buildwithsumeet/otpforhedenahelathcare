@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { createOrder, verifyPayment } from "../api/paymentApi";
 import "./PaymentPage.css";
 
 const PaymentPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const deal_id = searchParams.get("deal_id");
   const amountStr = searchParams.get("amount"); 
   const expiresAt = searchParams.get("expires_at");
@@ -16,6 +17,13 @@ const PaymentPage = () => {
   // Check Expiry (10 mins)
   const isExpired = expiresAt && Date.now() > Number(expiresAt);
 
+  // Auto-redirect if expired
+  useEffect(() => {
+    if (isExpired) {
+       navigate("/expired");
+    }
+  }, [isExpired, navigate]);
+
   // Timer logic for better UX
   useEffect(() => {
     if (!expiresAt || isExpired) return;
@@ -24,6 +32,7 @@ const PaymentPage = () => {
       const remaining = Number(expiresAt) - Date.now();
       if (remaining <= 0) {
         clearInterval(interval);
+        navigate("/expired");
       } else {
         const mins = Math.floor(remaining / 60000);
         const secs = Math.floor((remaining % 60000) / 1000);
@@ -32,14 +41,14 @@ const PaymentPage = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [expiresAt, isExpired]);
+  }, [expiresAt, isExpired, navigate]);
 
   const amountInRupees = Number(amountStr) || 0;
   const amountInPaise = Math.round(amountInRupees * 100);
 
   const handlePayment = async () => {
     if (isExpired) {
-      setErrorMsg("Link Expired. Please generate a new one from Bitrix.");
+      navigate("/expired");
       return;
     }
     setLoading(true);
@@ -69,7 +78,7 @@ const PaymentPage = () => {
             });
 
             if (verifyRes.data?.success) {
-              window.location.href = "/success";
+              navigate("/success");
             } else {
               setErrorMsg(verifyRes.data?.message || "Verification failed");
             }
@@ -94,7 +103,13 @@ const PaymentPage = () => {
       rzp.open();
     } catch (err) {
       const serverMsg = err.response?.data?.message;
-      setErrorMsg(serverMsg || "Failed to start payment. Try again.");
+      if (serverMsg?.includes("already completed")) {
+         navigate("/success");
+      } else if (serverMsg?.includes("expired")) {
+         navigate("/expired");
+      } else {
+         setErrorMsg(serverMsg || "Failed to start payment. Try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -128,12 +143,12 @@ const PaymentPage = () => {
           <div className="amount-value">₹{amountInRupees.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
         </div>
 
-        {(errorMsg || isExpired) && (
-          <div className={`error-container ${isExpired ? 'expired-box' : ''}`}>
+        {errorMsg && (
+          <div className="error-container">
              <svg viewBox="0 0 24 24" className="lock-icon" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
              </svg>
-             <span>{errorMsg || "This payment link has expired for security."}</span>
+             <span>{errorMsg}</span>
           </div>
         )}
 
