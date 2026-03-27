@@ -9,7 +9,7 @@ services:
     restart: always
     environment:
       - PORT=3000
-      - MONGODB_URI=mongodb://mongo:27017
+      - MONGODB_URI=mongodb+srv://mrsumit8114:MoovOn_ProtFolio@cluster0.fgvzlyc.mongodb.net
       - NODE_ENV=production
       - CORS_ORIGIN=http://187.127.131.10
     depends_on:
