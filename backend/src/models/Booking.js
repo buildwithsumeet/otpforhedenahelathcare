@@ -12,6 +12,8 @@ const bookingSchema = new mongoose.Schema({
   completion_otp_generated: { type: Boolean, default: false },
   completion_otp_created_at: { type: Date, default: null }, // ✅ Used in cron update
 
+  payment_link_created_at: Date,
+
   start_time: Date,
   end_time: Date,
   status: {

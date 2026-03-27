@@ -131,7 +131,15 @@ export const dealCreated = asyncHandler(async (req, res) => {
   }
 
   const amount = Number(deal.OPPORTUNITY) || 0;
-  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${dealId}&amount=${amount}`;
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now (for frontend to check)
+  const paymentLink = `${FRONTEND_URL}/pay?deal_id=${dealId}&amount=${amount}&expires_at=${expiresAt}`;
+
+  // ✅ Store Link creation time for 10-minute expiry check
+  await Booking.findOneAndUpdate(
+    { deal_id: Number(dealId) },
+    { payment_link_created_at: new Date(), status: "pending" },
+    { upsert: true, new: true }
+  );
 
   // ✅ Small delay between get and update
   await new Promise(r => setTimeout(r, 500));

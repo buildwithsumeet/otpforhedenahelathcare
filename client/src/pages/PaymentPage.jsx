@@ -6,15 +6,23 @@ const PaymentPage = () => {
   const [searchParams] = useSearchParams();
   const deal_id = searchParams.get("deal_id");
   const amountStr = searchParams.get("amount"); // e.g. "80" or "5000"
+  const expiresAt = searchParams.get("expires_at"); // expiration timestamp
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  // Check Expiry (10 mins)
+  const isExpired = expiresAt && Date.now() > Number(expiresAt);
 
   // Convert string → number → paise (×100)
   const amountInRupees = Number(amountStr) || 0;
   const amountInPaise = Math.round(amountInRupees * 100); // safe rounding
 
   const handlePayment = async () => {
+    if (isExpired) {
+      setErrorMsg("Link Expired. Please generate a new one from Bitrix.");
+      return;
+    }
     if (!deal_id || amountInRupees <= 0) {
       setErrorMsg("Invalid payment details (deal or amount missing)");
       return;
@@ -79,10 +87,11 @@ const PaymentPage = () => {
       rzp.open(); // ← this opens the popup!
     } catch (err) {
       console.error("Payment initiation failed:", err);
+      const serverMsg = err.response?.data?.message;
       setErrorMsg(
-        err.message?.includes("SDK")
+        serverMsg || (err.message?.includes("SDK")
           ? "Razorpay not loaded – refresh page"
-          : "Failed to start payment. Try again."
+          : "Failed to start payment. Try again.")
       );
     } finally {
       setLoading(false);
@@ -105,19 +114,19 @@ const PaymentPage = () => {
         Amount: ₹{amountInRupees.toFixed(2)}
       </h3>
 
-      {errorMsg && (
+      {(errorMsg || isExpired) && (
         <p style={{ color: "red", margin: "20px 0", fontWeight: "bold" }}>
-          {errorMsg}
+          {errorMsg || "Link Expired. Please generate a new one from Bitrix."}
         </p>
       )}
 
       <button
         onClick={handlePayment}
-        disabled={loading}
+        disabled={loading || isExpired}
         style={{
           padding: "14px 40px",
           fontSize: "18px",
-          backgroundColor: loading ? "#95a5a6" : "#3498db",
+          backgroundColor: (loading || isExpired) ? "#95a5a6" : "#3498db",
           color: "white",
           border: "none",
           borderRadius: "6px",

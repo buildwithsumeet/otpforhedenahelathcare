@@ -4,6 +4,7 @@ import Booking from "../models/Booking.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import axios from "axios";
 import { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, BITRIX_WEBHOOK } from "../config.js";
+import { PAYMENT_LINK_EXPIRY } from "../constants.js";
 
 const razorpay = new Razorpay({
   key_id: RAZORPAY_KEY_ID,
@@ -12,6 +13,19 @@ const razorpay = new Razorpay({
 
 export const createOrder = asyncHandler(async (req, res) => {
   const { deal_id, amount } = req.body; // Amount direct integer/float (no conversion)
+
+  // 🔥 Expiry check (10 Minutes)
+  const booking = await Booking.findOne({ deal_id: Number(deal_id) });
+
+  if (booking && booking.payment_link_created_at) {
+    const expiresAt = new Date(booking.payment_link_created_at).getTime() + PAYMENT_LINK_EXPIRY;
+    if (Date.now() > expiresAt) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Payment link has expired (10 minutes limit). Please generate a new link from Bitrix." 
+      });
+    }
+  }
 
   const order = await razorpay.orders.create({
     amount: amount, 
