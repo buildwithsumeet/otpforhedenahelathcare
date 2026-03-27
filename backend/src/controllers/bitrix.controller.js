@@ -131,6 +131,17 @@ export const dealCreated = asyncHandler(async (req, res) => {
   }
 
   const amount = Number(deal.OPPORTUNITY) || 0;
+
+  // 🔥 Loop prevention: Only update if link doesn't exist OR has expired
+  const existingBooking = await Booking.findOne({ deal_id: Number(dealId) });
+  if (existingBooking?.payment_link_created_at) {
+    const age = Date.now() - new Date(existingBooking.payment_link_created_at).getTime();
+    if (age < 9 * 60 * 1000) { // 9 minutes buffer
+      console.log(`⏭️ Link still fresh for Deal ${dealId} (${Math.round(age/1000)}s old), skipping update to avoid loop`);
+      return res.json({ success: true, message: "Link already exists and is fresh" });
+    }
+  }
+
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now (for frontend to check)
   const paymentLink = `${FRONTEND_URL}/pay?deal_id=${dealId}&amount=${amount}&expires_at=${expiresAt}`;
 
