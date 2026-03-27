@@ -14,16 +14,25 @@ const razorpay = new Razorpay({
 export const createOrder = asyncHandler(async (req, res) => {
   const { deal_id, amount } = req.body; // Amount direct integer/float (no conversion)
 
-  // 🔥 Expiry check (10 Minutes)
+  // 🔥 Expiry & Status check
   const booking = await Booking.findOne({ deal_id: Number(deal_id) });
 
-  if (booking && booking.payment_link_created_at) {
-    const expiresAt = new Date(booking.payment_link_created_at).getTime() + PAYMENT_LINK_EXPIRY;
-    if (Date.now() > expiresAt) {
+  if (booking) {
+    if (["booked", "started", "completed"].includes(booking.status)) {
       return res.status(400).json({ 
         success: false, 
-        message: "Payment link has expired (10 minutes limit). Please generate a new link from Bitrix." 
+        message: "Payment already completed for this deal." 
       });
+    }
+
+    if (booking.payment_link_created_at) {
+      const expiresAt = new Date(booking.payment_link_created_at).getTime() + PAYMENT_LINK_EXPIRY;
+      if (Date.now() > expiresAt) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Payment link has expired (10 minutes limit). Please generate a new link from Bitrix." 
+        });
+      }
     }
   }
 
@@ -63,7 +72,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       fields: {
         UF_CRM_1773904189668: "PAID",
         UF_CRM_1773902195825: razorpay_payment_id,
-        UF_CRM_1773813535000: razorpay_order_id
+        UF_CRM_1773813535000: "PAID_" + razorpay_order_id
       }
     });
     console.log("✅ Bitrix updated:", response.data)  // ← Add karo
