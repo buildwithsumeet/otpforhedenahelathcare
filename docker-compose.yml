@@ -9,16 +9,19 @@ services:
     restart: always
     environment:
       - PORT=3000
-      - DB_URI=mongodb://mongo:27017/otp-db
+      - MONGODB_URI=mongodb://mongo:27017
       - NODE_ENV=production
+      - CORS_ORIGIN=http://187.127.131.10
+    depends_on:
+      - mongo
 
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
       args:
-        - VITE_BACKEND_URL=http://localhost:3000/api/v1
-        - VITE_RAZORPAY_KEY=${VITE_RAZORPAY_KEY}
+        - VITE_BACKEND_URL=http://187.127.131.10:3000/api/v1
+        - VITE_RAZORPAY_KEY=rzp_test_SRrZ8YKuF5tkyr
     container_name: lets-connect-client
     ports:
       - "80:80"

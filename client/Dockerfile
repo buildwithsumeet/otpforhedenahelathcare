@@ -28,6 +28,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Pass build-time environment variables to Vite
+ARG VITE_BACKEND_URL
+ARG VITE_RAZORPAY_KEY
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ENV VITE_RAZORPAY_KEY=$VITE_RAZORPAY_KEY
+
 RUN npm run build
 
 # Stage 2: Serve
