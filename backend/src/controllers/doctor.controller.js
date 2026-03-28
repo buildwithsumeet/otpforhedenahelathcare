@@ -26,11 +26,14 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
   // Switch to Contact Get API
   const bitrixRes = await axios.post(
     "https://hedenahealthcare.bitrix24.in/rest/19/7h0u2dupj7yacn4b/crm.contact.get.json",
-    { id: contactId, select: ["ID", "NAME", "LAST_NAME", "UF_CRM_*"] }
+    { id: contactId, select: ["*", "UF_*"] } // Fetch all standard and custom fields
   );
 
   const fields = bitrixRes.data?.result;
   if (!fields) throw new ApiError(404, "Doctor Deal not found in Bitrix");
+
+  // Log all fetched fields to terminal for inspection
+  console.log("ALL AVAILABLE BITRIX CONTACT FIELDS:", fields);
 
   // Helper to safely handle Bitrix empty arrays/nulls
   const getString = (val) => {
