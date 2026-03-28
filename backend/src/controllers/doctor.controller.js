@@ -11,6 +11,11 @@ const generateDoctorCode = async () => {
 };
 
 export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
+
+  if (req.body?.auth?.application_token !== "jpmvq8j7p91bk5w2djcso14thf4igztc") {
+    throw new ApiError(403, "Unauthorized");
+  }
+
   console.log("👨‍⚕️ Doctor Register Webhook Hit:", req.body);
 
   const data = req.body.data?.FIELDS || req.body.data;
@@ -22,7 +27,7 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
 
   // 🔥 1. Get full deal details from Bitrix
   const bitrixRes = await axios.post(
-    "https://hedenahealthcare.bitrix24.in/rest/19/6699ol2dfrzdkogg/crm.deal.get.json",
+    "https://hedenahealthcare.bitrix24.in/rest/19/a6b9phs0wdxn2t1r/crm.deal.get.json",
     { id: dealId }
   );
 
