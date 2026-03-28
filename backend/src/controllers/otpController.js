@@ -504,10 +504,20 @@ export const payout = asyncHandler(async (req, res) => {
 
   // ✅ Check if UF_CRM_1774328872596 (Completion Confirmation) is filled/Verified
   const isVerified = dealFields?.UF_CRM_1774328872596 === "Verified";
-
+  
+  // ⛔ Preventing Infinite Loops & Duplicate Payouts in Bitrix Automation
+  const currentPayoutStatus = dealFields?.UF_CRM_1774430784298; // Payout Status Field
+  
   if (!isVerified) {
     console.log(`⏹️ Skipping Payout for Deal ${deal_id}: Completion not verified yet.`);
     return res.json(new ApiResponse(200, { deal_id }, "Completion not verified, skipping payout"));
+  }
+
+  // If a payout has already been created (queued, processing, processed, etc.), do NOT run payout again!
+  // This prevents Bitrix UPDATE event from looping over and over causing multiple Razorpay transfers.
+  if (currentPayoutStatus && currentPayoutStatus !== "Failed" && currentPayoutStatus !== "rejected") {
+    console.log(`⏹️ Skipping Payout for Deal ${deal_id}: Payout is already ${currentPayoutStatus}.`);
+    return res.json(new ApiResponse(200, { deal_id, currentPayoutStatus }, "Payout already processed or pending."));
   }
 
   // 🔥 RAZORPAY PAYOUT LOGIC
