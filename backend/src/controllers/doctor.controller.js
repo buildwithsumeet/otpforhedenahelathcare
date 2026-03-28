@@ -29,12 +29,8 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
     { id: contactId, select: ["ID", "NAME", "LAST_NAME", "UF_CRM_*"] }
   );
 
-  if (!fields) throw new ApiError(404, "Doctor Contact not found in Bitrix");
-
-  // Debugging: Log available fields to verify mapping
-  console.log("🔍 Bitrix Data Result for Contact:", contactId);
-  console.log("Keys found:", Object.keys(fields).filter(k => k.startsWith("UF_")));
-  console.log("🔍 Mapping Debug - Full Name:", fields.UF_CRM_1771929365311);
+  const fields = bitrixRes.data?.result;
+  if (!fields) throw new ApiError(404, "Doctor Deal not found in Bitrix");
 
   // Helper to safely handle Bitrix empty arrays/nulls
   const getString = (val) => {
