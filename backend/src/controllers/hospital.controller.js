@@ -11,6 +11,11 @@ const generateCode = async () => {
 };
 
 export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
+
+  if (req.body?.auth?.application_token !== "2ntd3671ya04s48nrj8nzku2ikjiu45n") {
+    throw new ApiError(403, "Unauthorized");
+  }
+
   console.log("🏥 Hospital Register Webhook Hit:", req.body);
 
   const data = req.body.data?.FIELDS || req.body.data;
