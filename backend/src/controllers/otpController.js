@@ -454,7 +454,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
       `https://hedenahealthcare.bitrix24.in/rest/19/fzilqqrw8q8ykjk2/crm.deal.update.json`,
       {
         ID: deal_id,
-        fields: { UF_CRM_1774698471543: "Invalid" }
+        fields: { UF_CRM_1774698794590: "Invalid" }
       }
     );
     throw new ApiError(401, "Invalid Completion OTP");
@@ -470,7 +470,7 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
     {
       ID: deal_id,
       fields: {
-        UF_CRM_1774698471543: "Verified",
+        UF_CRM_1774698794590: "Verified",
       }
     }
   );
