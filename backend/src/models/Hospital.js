@@ -1,0 +1,38 @@
+import mongoose from "mongoose";
+
+const hospitalSchema = new mongoose.Schema({
+  deal_id: { type: Number, unique: true },
+  hospital_name: String,
+  hospital_type: String,
+  other_type: String,
+  registration_number: String,
+  issuing_authority: String,
+  license_expiry_date: Date,
+  referring_doctor_specialization: String,
+  referral_status: String,
+  address: String,
+  google_map_link: String,
+  total_beds: Number,
+  icu_beds: Number,
+  ot_rooms: Number,
+  emergency_services_required: String,
+  nabh_accredited: String,
+  ayushman_bharat_empanelled: String,
+  company_pan: String,
+  proprietor_pan: String,
+  gstin: String,
+  billing_name: String,
+  account_name: String,
+  account_number: String,
+  ifsc_code: String,
+  bank_name: String,
+  cancelled_cheque_file: String,
+  pricing_model: String,
+  cancellation_window: String,
+  emergency_fee: String,
+  replacement_policy: String,
+  agreement_upload: String,
+  hospital_code: String,
+}, { timestamps: true });
+
+export default mongoose.model("Hospital", hospitalSchema);

@@ -104,7 +104,7 @@ const PaymentPage = () => {
     } catch (err) {
       const serverMsg = err.response?.data?.message;
       if (serverMsg?.includes("already completed")) {
-         navigate("/success");
+         navigate("/paid");
       } else if (serverMsg?.includes("expired")) {
          navigate("/expired");
       } else {

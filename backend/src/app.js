@@ -51,4 +51,10 @@ app.use("/api/v1/payment", paymentRouter)
 import bitrixRouter from "./routes/bitrix.routes.js"
 app.use("/api/v1/paymentFrontendSendLink" ,bitrixRouter )
 
+import hospitalRouter from "./routes/hospital.routes.js"
+app.use("/api/v1/hospitals", hospitalRouter)
+
+import doctorRouter from "./routes/doctor.routes.js"
+app.use("/api/v1/doctors", doctorRouter)
+
 export default app;
