@@ -16,21 +16,25 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized Bitrix Token");
   }
 
-  console.log("👨‍⚕️ Doctor Webhook Hit ID:", req.body.data?.FIELDS?.ID || req.body.data?.ID);
+  console.log("👨‍⚕️ Doctor Webhook Hit ID:", req.body.data?.FIELDS?.ID || req.body.data?.ID || req.body.data?.CONTACT_ID);
 
   const data = req.body.data?.FIELDS || req.body.data;
-  const dealId = Number(data?.DEAL_ID || data?.ID);
+  const contactId = Number(data?.ID || data?.CONTACT_ID);
   
-  if (!dealId) throw new ApiError(400, "Deal ID required");
+  if (!contactId) throw new ApiError(400, "Contact ID required");
 
-  // Fetch full deal data with explicit field selection
+  // Switch to Contact Get API
   const bitrixRes = await axios.post(
-    "https://hedenahealthcare.bitrix24.in/rest/19/a6b9phs0wdxn2t1r/crm.deal.get.json",
-    { id: dealId, select: ["ID", "TITLE", "UF_CRM_*"] }
+    "https://hedenahealthcare.bitrix24.in/rest/19/7h0u2dupj7yacn4b/crm.contact.get.json",
+    { id: contactId, select: ["ID", "NAME", "LAST_NAME", "UF_CRM_*"] }
   );
 
-  const fields = bitrixRes.data?.result;
-  if (!fields) throw new ApiError(404, "Doctor Deal not found in Bitrix");
+  if (!fields) throw new ApiError(404, "Doctor Contact not found in Bitrix");
+
+  // Debugging: Log available fields to verify mapping
+  console.log("🔍 Bitrix Data Result for Contact:", contactId);
+  console.log("Keys found:", Object.keys(fields).filter(k => k.startsWith("UF_")));
+  console.log("🔍 Mapping Debug - Full Name:", fields.UF_CRM_1771929365311);
 
   // Helper to safely handle Bitrix empty arrays/nulls
   const getString = (val) => {
@@ -40,12 +44,9 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
   };
 
   const dobStr = getString(fields.UF_CRM_1771929412930);
-  
-  // Mapping with console logs to debug specific fields
-  console.log("🔍 Mapping Debug - Full Name:", fields.UF_CRM_1771929365311);
 
   const doctorData = {
-    deal_id: dealId,
+    deal_id: contactId, // Mapping Contact ID to the 'deal_id' field in DB for now to keep existing schema
     full_name: getString(fields.UF_CRM_1771929365311),
     dob: (dobStr && !isNaN(new Date(dobStr).getTime())) ? new Date(dobStr) : null,
     gender: getString(fields.UF_CRM_1771929485597),
@@ -95,15 +96,15 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
 
   console.log("Keys available in Result:", Object.keys(fields).filter(k => k.startsWith("UF_")));
 
-  let doctor = await Doctor.findOne({ deal_id: dealId });
+  let doctor = await Doctor.findOne({ deal_id: contactId });
   if (!doctor) {
     const doctorCode = await generateDoctorCode();
     doctor = await Doctor.create({ ...doctorData, doctor_code: doctorCode });
-    console.log(`🆕 Doctor Registered: ${doctor.doctor_code}`);
+    console.log(`🆕 Doctor (Contact) Registered: ${doctor.doctor_code}`);
   } else {
-    doctor = await Doctor.findOneAndUpdate({ deal_id: dealId }, { $set: doctorData }, { new: true });
-    console.log(`🔄 Doctor Updated: ${doctor.doctor_code}`);
+    doctor = await Doctor.findOneAndUpdate({ deal_id: contactId }, { $set: doctorData }, { new: true });
+    console.log(`🔄 Doctor (Contact) Updated: ${doctor.doctor_code}`);
   }
 
-  return res.json(new ApiResponse(200, doctor, "Doctor synced successfully"));
+  return res.json(new ApiResponse(200, doctor, "Doctor Contact synced successfully"));
 });
