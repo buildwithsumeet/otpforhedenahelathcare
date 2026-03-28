@@ -16,45 +16,21 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized Bitrix Token");
   }
 
-  console.log("👨‍⚕️ Doctor Webhook Hit Event:", req.body.event, "ID:", req.body.data?.FIELDS?.ID || req.body.data?.ID || req.body.data?.CONTACT_ID);
+  console.log("👨‍⚕️ Doctor Webhook Hit Event:", req.body.event, "ID:", req.body.data?.FIELDS?.ID || req.body.data?.ID);
 
   const data = req.body.data?.FIELDS || req.body.data;
-  let targetId = Number(data?.ID || data?.CONTACT_ID);
-  let contactId = Number(data?.CONTACT_ID);
-  let dealId = null;
-  let eventName = (req.body.event || "").toUpperCase();
+  const contactId = Number(data?.ID);
   
-  if (!targetId) throw new ApiError(400, "ID required from Bitrix webhook payload");
+  if (!contactId) throw new ApiError(400, "Contact ID required from Bitrix webhook payload");
 
-  // If this is a Deal webhook (or we only have an ID and no event, we assume it's Deal first)
-  if (eventName.includes("DEAL") || !contactId) {
-    dealId = targetId;
-    console.log(`Checking if ID ${dealId} is a Deal to get its Contact ID...`);
-    const dealRes = await axios.post(
-      "https://hedenahealthcare.bitrix24.in/rest/19/7h0u2dupj7yacn4b/crm.deal.get.json",
-      { id: dealId }
-    );
-    const dealResult = dealRes.data?.result;
+  // Since Doctor Webhook is linked to Contact events (ONCRMCONTACTADD, ONCRMCONTACTUPDATE),
+  // the ID in the payload will always be the Contact ID.
+  console.log(`✅ Webhook is for Contact. Fetching Contact details for ID: ${contactId}`);
 
-    if (dealResult && dealResult.CONTACT_ID) {
-      contactId = Number(dealResult.CONTACT_ID);
-      console.log(`✅ Deal found! Extracted Contact ID: ${contactId}`);
-    } else {
-      console.log(`⚠️ Deal not found or it has no Contact. Using ID ${targetId} as Contact ID fallback.`);
-      contactId = targetId;
-      dealId = targetId; // keep existing behavior
-    }
-  } else {
-    contactId = targetId;
-    dealId = targetId;
-  }
-
-  if (!contactId) throw new ApiError(404, "No Contact ID could be determined");
-
-  // Now use Contact Get API with the correct contactId
+  // Fetch all standard and custom fields for the Contact
   const bitrixRes = await axios.post(
-    "https://hedenahealthcare.bitrix24.in/rest/19/eeany8wspkctd64d/crm.company.contact.items.get.json",
-    { id: contactId, select: ["*", "UF_*"] } // Fetch all standard and custom fields
+    "https://hedenahealthcare.bitrix24.in/rest/19/m9l0r0xwvn9cl926/crm.contact.get.json",
+    { id: contactId, select: ["*", "UF_*"] } 
   );
 
   const fields = bitrixRes.data?.result;
@@ -73,7 +49,7 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
   const dobStr = getString(fields.UF_CRM_1771929412930);
 
   const doctorData = {
-    deal_id: targetId, // Mapping targetId (often Deal ID) to 'deal_id' field in DB to keep existing schema
+    deal_id: contactId, // Mapping contactId to 'deal_id' field in DB to keep existing schema
     full_name: getString(fields.UF_CRM_1771929365311),
     dob: (dobStr && !isNaN(new Date(dobStr).getTime())) ? new Date(dobStr) : null,
     gender: getString(fields.UF_CRM_1771929485597),
@@ -123,13 +99,13 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
 
   console.log("Keys available in Result:", Object.keys(fields).filter(k => k.startsWith("UF_")));
 
-  let doctor = await Doctor.findOne({ deal_id: targetId });
+  let doctor = await Doctor.findOne({ deal_id: contactId });
   if (!doctor) {
     const doctorCode = await generateDoctorCode();
     doctor = await Doctor.create({ ...doctorData, doctor_code: doctorCode });
     console.log(`🆕 Doctor (Contact) Registered: ${doctor.doctor_code}`);
   } else {
-    doctor = await Doctor.findOneAndUpdate({ deal_id: targetId }, { $set: doctorData }, { new: true });
+    doctor = await Doctor.findOneAndUpdate({ deal_id: contactId }, { $set: doctorData }, { new: true });
     console.log(`🔄 Doctor (Contact) Updated: ${doctor.doctor_code}`);
   }
 
