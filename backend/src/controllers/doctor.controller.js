@@ -53,7 +53,7 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
 
   // Now use Contact Get API with the correct contactId
   const bitrixRes = await axios.post(
-    "https://hedenahealthcare.bitrix24.in/rest/19/7h0u2dupj7yacn4b/crm.contact.get.json",
+    "https://hedenahealthcare.bitrix24.in/rest/19/eeany8wspkctd64d/crm.company.contact.items.get.json",
     { id: contactId, select: ["*", "UF_*"] } // Fetch all standard and custom fields
   );
 
