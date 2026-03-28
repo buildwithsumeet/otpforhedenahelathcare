@@ -470,7 +470,6 @@ export const verifyCompletionOTP = asyncHandler(async (req, res) => {
     {
       ID: deal_id,
       fields: {
-        STAGE_ID: "C1:WON",
         UF_CRM_1774328872596: "Verified",
       }
     }

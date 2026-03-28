@@ -4,6 +4,9 @@ import ApiResponse from "../utils/ApiResponse.js"
 import Doctor from "../models/Doctor.js"
 import axios from "axios"
 
+// Cache to prevent duplicate webhook processing (Debouncing)
+const processedWebhooks = new Map();
+
 // Helper to generate a unique doctor code
 const generateDoctorCode = async () => {
   const count = await Doctor.countDocuments();
@@ -22,6 +25,22 @@ export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
   const contactId = Number(data?.ID);
   
   if (!contactId) throw new ApiError(400, "Contact ID required from Bitrix webhook payload");
+
+  const eventName = req.body.event || "UNKNOWN_EVENT";
+  const webhookKey = `${eventName}_${contactId}`;
+  const now = Date.now();
+
+  // Debouncing: If the same webhook event for the same contact is triggered within 5 seconds, ignore it
+  if (processedWebhooks.has(webhookKey)) {
+    const lastTime = processedWebhooks.get(webhookKey);
+    if (now - lastTime < 5000) { // 5-second window
+      console.log(`⏳ Duplicate Webhook skipped for: ${webhookKey}`);
+      return res.json(new ApiResponse(200, null, "Duplicate webhook ignored"));
+    }
+  }
+
+  // Update the time for this webhook
+  processedWebhooks.set(webhookKey, now);
 
   // Since Doctor Webhook is linked to Contact events (ONCRMCONTACTADD, ONCRMCONTACTUPDATE),
   // the ID in the payload will always be the Contact ID.
