@@ -9,7 +9,6 @@ import axios from "axios";
 // ==============================
 const BITRIX_BASE_URL = "https://hedenahealthcare.bitrix24.in/rest";
 const DEAL_WEBHOOK = "19/9ouoj67qfx0d8zj2";
-const COMPANY_WEBHOOK = "19/a6b9phs0wdxn2t1r";
 const UPDATE_WEBHOOK = "19/5o7vmq1gjvfakav7";
 const AUTH_TOKEN = "2ntd3671ya04s48nrj8nzku2ikjiu45n";
 
@@ -46,17 +45,16 @@ const extractDealId = (body) => {
     body?.data ||
     body;
 
-  const dealId =
+  return (
     Number(data?.ID) ||
     Number(data?.deal_id) ||
     Number(body?.ID) ||
-    Number(body?.deal_id);
-
-  return dealId;
+    Number(body?.deal_id)
+  );
 };
 
 // ==============================
-// 🔥 MAIN API
+// 🔥 MAIN FUNCTION
 // ==============================
 export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
 
@@ -89,79 +87,48 @@ export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Deal not found");
   }
 
-  console.log("📦 DEAL:", JSON.stringify(deal, null, 2));
-
-  const companyId = deal.COMPANY_ID;
-
-  if (!companyId) {
-    throw new ApiError(400, "Company not linked with deal");
-  }
-
-  console.log("🏢 Company ID:", companyId);
+  console.log("📦 DEAL DATA:", JSON.stringify(deal, null, 2));
 
   // ==============================
-  // 🔥 STEP 2: GET COMPANY
-  // ==============================
-  const companyRes = await axios.post(
-    `${BITRIX_BASE_URL}/${COMPANY_WEBHOOK}/crm.company.get.json`,
-    { id: companyId }
-  );
-
-  const company = companyRes.data?.result;
-
-  if (!company) {
-    throw new ApiError(404, "Company not found");
-  }
-
-  console.log("📦 COMPANY:", JSON.stringify(company, null, 2));
-
-  // ==============================
-  // 🔥 STEP 3: ADDRESS FIX
-  // ==============================
-  const fullAddress = [
-    company.ADDRESS,
-    company.ADDRESS_2,
-    company.ADDRESS_CITY,
-    company.ADDRESS_REGION,
-    company.ADDRESS_PROVINCE,
-    company.ADDRESS_POSTAL_CODE,
-    company.ADDRESS_COUNTRY,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  // ==============================
-  // 🔥 STEP 4: DATA MAPPING
+  // 🔥 STEP 2: MAP DATA FROM DEAL
   // ==============================
   const hospitalData = {
     deal_id: dealId,
-    company_id: companyId,
 
-    hospital_name: getString(company.TITLE),
-    registration_number: getString(company.UF_CRM_1771308871019),
-    issuing_authority: getString(company.UF_CRM_1771913938636),
-    gstin: getString(company.UF_CRM_1771309077241),
-    company_pan: getString(company.UF_CRM_1771309063692),
+    // 🏥 BASIC INFO
+    hospital_name: getString(deal.TITLE),
 
-    address: fullAddress,
-    google_map_link: getString(company.UF_CRM_1771308917041),
+    registration_number: getString(deal.UF_CRM_1771308871019),
+    issuing_authority: getString(deal.UF_CRM_1771913938636),
 
-    total_beds: getNumber(company.UF_CRM_1771308932424),
-    icu_beds: getNumber(company.UF_CRM_1772521915636),
-    ot_rooms: getNumber(company.UF_CRM_1772521938051),
+    gstin: getString(deal.UF_CRM_1771309077241),
+    company_pan: getString(deal.UF_CRM_1771309063692),
 
-    nabh_accredited: getString(company.UF_CRM_1771308996541),
-    ayushman_bharat_empanelled: getString(company.UF_CRM_1771309017042),
+    // 📍 ADDRESS (IMPORTANT: check correct field ID)
+    address: getString(deal.UF_CRM_1771308900000), // 🔥 CHANGE if needed
 
-    bank_name: getString(company.UF_CRM_1771310789378),
-    account_number: getString(company.UF_CRM_1771310802862),
-    ifsc_code: getString(company.UF_CRM_1771310816536),
+    google_map_link: getString(deal.UF_CRM_1771308917041),
 
-    agreement_upload: getString(company.UF_CRM_177130986853),
+    // 🛏 INFRA
+    total_beds: getNumber(deal.UF_CRM_1771308932424),
+    icu_beds: getNumber(deal.UF_CRM_1772521915636),
+    ot_rooms: getNumber(deal.UF_CRM_1772521938051),
+
+    // ✅ COMPLIANCE
+    nabh_accredited: getString(deal.UF_CRM_1771308996541),
+    ayushman_bharat_empanelled: getString(deal.UF_CRM_1771309017042),
+
+    // 💳 BANK
+    bank_name: getString(deal.UF_CRM_1771310789378),
+    account_number: getString(deal.UF_CRM_1771310802862),
+    ifsc_code: getString(deal.UF_CRM_1771310816536),
+
+    // 📄 DOC
+    agreement_upload: getString(deal.UF_CRM_177130986853),
   };
 
   // ==============================
-  // 🔥 STEP 5: SAVE / UPDATE
+  // 🔥 STEP 3: SAVE / UPDATE
   // ==============================
   let hospital = await Hospital.findOne({ deal_id: dealId });
 
@@ -185,10 +152,10 @@ export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
   }
 
   // ==============================
-  // 🔥 STEP 6: UPDATE DEAL
+  // 🔥 STEP 4: UPDATE DEAL (Hospital Code)
   // ==============================
   if (!deal.UF_CRM_1771311033402) {
-    console.log("📤 Updating Deal with Hospital Code...");
+    console.log("📤 Updating Deal...");
 
     await axios.post(
       `${BITRIX_BASE_URL}/${UPDATE_WEBHOOK}/crm.deal.update.json`,
