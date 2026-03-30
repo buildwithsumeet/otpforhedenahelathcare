@@ -4,6 +4,7 @@ import cors from "cors";
 
 // Import cron job to start it
 import "./cron/otpCron.js";
+import "./cron/paymentExpiryCron.js";
 
 const app = express();
 

@@ -18,7 +18,7 @@ const bookingSchema = new mongoose.Schema({
   end_time: Date,
   status: {
     type: String,
-    enum: ["pending", "booked", "started", "completed"],
+    enum: ["pending", "booked", "started", "completed", "expired"],
     default: "pending"
   }
 }, { timestamps: true });

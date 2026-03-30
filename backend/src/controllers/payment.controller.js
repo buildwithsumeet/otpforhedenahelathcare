@@ -25,6 +25,13 @@ export const createOrder = asyncHandler(async (req, res) => {
       });
     }
 
+    if (booking.status === "expired") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Payment link has expired. Please generate a new link from Bitrix." 
+      });
+    }
+
     if (booking.payment_link_created_at) {
       const expiresAt = new Date(booking.payment_link_created_at).getTime() + PAYMENT_LINK_EXPIRY;
       if (Date.now() > expiresAt) {
