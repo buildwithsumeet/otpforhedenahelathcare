@@ -1,132 +1,189 @@
-import asyncHandler from "../utils/asyncHandler.js"
-import ApiError from "../utils/ApiError.js"
-import ApiResponse from "../utils/ApiResponse.js"
-import Doctor from "../models/Doctor.js"
-import axios from "axios"
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
+import Doctor from "../models/Doctor.js";
+import axios from "axios";
 
-// Cache to prevent duplicate webhook processing (Debouncing)
+// ==============================
+// 🔥 CONFIG
+// ==============================
+const BITRIX_URL = "https://hedenahealthcare.bitrix24.in/rest/19/m9l0r0xwvn9cl926/crm.contact.get.json";
+const AUTH_TOKEN = "jpmvq8j7p91bk5w2djcso14thf4igztc";
+
+// ==============================
+// 🔥 DEBOUNCE CACHE
+// ==============================
 const processedWebhooks = new Map();
 
-// Helper to generate a unique doctor code
-const generateDoctorCode = async () => {
-  const count = await Doctor.countDocuments();
-  return `DR-${(count + 1).toString().padStart(3, '0')}`;
+// ==============================
+// 🔥 HELPERS
+// ==============================
+const getString = (val) => {
+  if (!val) return "";
+  if (Array.isArray(val)) return val.filter(Boolean).join(", ");
+  return String(val).trim();
 };
 
-export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
-  // 1. Authorization check
-  if (req.body?.auth?.application_token && req.body?.auth?.application_token !== "jpmvq8j7p91bk5w2djcso14thf4igztc") {
-    throw new ApiError(403, "Unauthorized Bitrix Token");
-  }
+const getFile = (val) => {
+  if (!val) return "";
+  if (Array.isArray(val)) return val[0]?.url || "";
+  return val;
+};
 
-  console.log("👨‍⚕️ Doctor Webhook Hit Event:", req.body.event, "ID:", req.body.data?.FIELDS?.ID || req.body.data?.ID);
+const getDate = (val) => {
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+// ==============================
+// 🔥 GENERATE CODE
+// ==============================
+const generateDoctorCode = async () => {
+  const count = await Doctor.countDocuments();
+  return `DR-${String(count + 1).padStart(3, "0")}`;
+};
+
+// ==============================
+// 🔥 MAIN FUNCTION
+// ==============================
+export const registerDoctorFromBitrix = asyncHandler(async (req, res) => {
+
+  console.log("👨‍⚕️ Webhook:", req.body.event);
+
+  // 🔐 AUTH
+  if (req.body?.auth?.application_token !== AUTH_TOKEN) {
+    throw new ApiError(403, "Unauthorized");
+  }
 
   const data = req.body.data?.FIELDS || req.body.data;
   const contactId = Number(data?.ID);
-  
-  if (!contactId) throw new ApiError(400, "Contact ID required from Bitrix webhook payload");
 
-  const eventName = req.body.event || "UNKNOWN_EVENT";
-  const webhookKey = `${eventName}_${contactId}`;
+  if (!contactId) {
+    throw new ApiError(400, "Contact ID missing");
+  }
+
+  // ==============================
+  // 🔥 DEBOUNCE
+  // ==============================
+  const key = `${req.body.event}_${contactId}`;
   const now = Date.now();
 
-  // Debouncing: If the same webhook event for the same contact is triggered within 5 seconds, ignore it
-  if (processedWebhooks.has(webhookKey)) {
-    const lastTime = processedWebhooks.get(webhookKey);
-    if (now - lastTime < 5000) { // 5-second window
-      console.log(`⏳ Duplicate Webhook skipped for: ${webhookKey}`);
-      return res.json(new ApiResponse(200, null, "Duplicate webhook ignored"));
+  if (processedWebhooks.has(key)) {
+    if (now - processedWebhooks.get(key) < 5000) {
+      console.log("⏳ Duplicate skipped");
+      return res.json(new ApiResponse(200, null, "Duplicate ignored"));
     }
   }
+  processedWebhooks.set(key, now);
 
-  // Update the time for this webhook
-  processedWebhooks.set(webhookKey, now);
+  // ==============================
+  // 🔥 FETCH CONTACT
+  // ==============================
+  const response = await axios.post(BITRIX_URL, {
+    id: contactId,
+    select: ["*", "UF_*"],
+  });
 
-  // Since Doctor Webhook is linked to Contact events (ONCRMCONTACTADD, ONCRMCONTACTUPDATE),
-  // the ID in the payload will always be the Contact ID.
-  console.log(`✅ Webhook is for Contact. Fetching Contact details for ID: ${contactId}`);
+  const f = response.data?.result;
 
-  // Fetch all standard and custom fields for the Contact
-  const bitrixRes = await axios.post(
-    "https://hedenahealthcare.bitrix24.in/rest/19/m9l0r0xwvn9cl926/crm.contact.get.json",
-    { id: contactId, select: ["*", "UF_*"] } 
-  );
+  if (!f) throw new ApiError(404, "Contact not found");
 
-  const fields = bitrixRes.data?.result;
-  if (!fields) throw new ApiError(404, "Doctor Contact not found in Bitrix");
+  console.log("📦 BITRIX DATA:", f);
 
-  // Log all fetched fields to terminal for inspection
-  console.log("ALL AVAILABLE BITRIX CONTACT FIELDS:", fields);
-
-  // Helper to safely handle Bitrix empty arrays/nulls
-  const getString = (val) => {
-    if (val === null || val === undefined || (Array.isArray(val) && val.length === 0)) return "";
-    if (Array.isArray(val)) return val.join(", "); 
-    return String(val).trim();
-  };
-
-  const dobStr = getString(fields.UF_CRM_1771929412930);
-
+  // ==============================
+  // 🔥 MAPPING (FINAL CORRECT)
+  // ==============================
   const doctorData = {
-    deal_id: contactId, // Mapping contactId to 'deal_id' field in DB to keep existing schema
-    full_name: getString(fields.UF_CRM_1771929365311),
-    dob: (dobStr && !isNaN(new Date(dobStr).getTime())) ? new Date(dobStr) : null,
-    gender: getString(fields.UF_CRM_1771929485597),
-    city: getString(fields.UF_CRM_1772170811296),
-    other_city: getString(fields.UF_CRM_1772171011515),
-    preferred_working_locations: getString(fields.UF_CRM_1771929608333),
-    emergency_contact_person: getString(fields.UF_CRM_1771929635769),
-    primary_qualification: getString(fields.UF_CRM_1771929788628),
-    qualification_certificate: getString(fields.UF_CRM_1772172294563),
-    university_name: getString(fields.UF_CRM_1771661652567),
-    year_of_passing: getString(fields.UF_CRM_1771661987818),
-    specialization: getString(fields.UF_CRM_1771929966211),
-    other_qualification: getString(fields.UF_CRM_1772172601486),
-    specialization_certificate: getString(fields.UF_CRM_1772172452187),
-    branch: getString(fields.UF_CRM_1772510883),
-    university_board: getString(fields.UF_CRM_1771998862653),
-    year_of_completion: getString(fields.UF_CRM_1771998743837),
-    medical_council_name: getString(fields.UF_CRM_1771930106348),
-    registration_number: getString(fields.UF_CRM_1771662011139),
-    registration_certificate: getString(fields.UF_CRM_1772173338),
-    registration_validity: getString(fields.UF_CRM_1771930261496),
-    government_id_aadhaar: getString(fields.UF_CRM_1772173836),
-    government_id_pan: getString(fields.UF_CRM_1772680990380),
-    cancelled_cheque_file: getString(fields.UF_CRM_1771310831682),
-    passport_photo: getString(fields.UF_CRM_1771993905808),
-    total_experience_years: getString(fields.UF_CRM_1771662185420),
-    years_post_specialization: getString(fields.UF_CRM_1771994050080),
-    current_employment_status: getString(fields.UF_CRM_1771994164054),
-    current_hospital_attachments: getString(fields.UF_CRM_1772174211),
-    license_number: getString(fields.UF_CRM_1772875929385),
-    anaesthesiology: getString(fields.UF_CRM_1772003543585),
-    optional_expertise: getString(fields.UF_CRM_1772003562824),
-    availability_model: getString(fields.UF_CRM_1772003669008),
-    booking_notice_preference: getString(fields.UF_CRM_1772003726187),
-    emergency_on_call: getString(fields.UF_CRM_1772003801842),
-    expected_charges_per_case: getString(fields.UF_CRM_1771996004816),
-    emergency_charges: getString(fields.UF_CRM_1771996029784),
-    minimum_guarantee_requirement: getString(fields.UF_CRM_1771996137457),
-    account_number: getString(fields.UF_CRM_1771310802862),
-    ifsc_code: getString(fields.UF_CRM_1771310816536),
-    upi_id: getString(fields.UF_CRM_1771996285556),
-    professional_indemnity_insurance: getString(fields.UF_CRM_1771996440022),
-    insurance_provider: getString(fields.UF_CRM_1771996479371),
-    policy_number: getString(fields.UF_CRM_1771996518465),
-    upload_policy_copy: getString(fields.UF_CRM_1771996589920),
+    deal_id: contactId,
+
+    full_name: getString(f.UF_CRM_1771929365311),
+    dob: getDate(f.UF_CRM_1771929412930),
+    gender: getString(f.UF_CRM_1771929485597),
+
+    city: getString(f.UF_CRM_1772170811296),
+    other_city: getString(f.UF_CRM_1772171011515),
+
+    preferred_working_locations: getString(f.UF_CRM_1771929608333),
+    emergency_contact_person: getString(f.UF_CRM_1771929635769),
+
+    primary_qualification: getString(f.UF_CRM_1771929788628),
+    qualification_certificate: getFile(f.UF_CRM_1772172294563),
+
+    university_name: getString(f.UF_CRM_1771661652567),
+    year_of_passing: getString(f.UF_CRM_1771661987818),
+
+    specialization: getString(f.UF_CRM_1771929966211),
+    other_qualification: getString(f.UF_CRM_1772172601486),
+
+    specialization_certificate: getFile(f.UF_CRM_1772172452187),
+
+    branch: getString(f.UF_CRM_1772510883),
+    university_board: getString(f.UF_CRM_1771998862653),
+    year_of_completion: getString(f.UF_CRM_1771998743837),
+
+    medical_council_name: getString(f.UF_CRM_1771930106348),
+    registration_number: getString(f.UF_CRM_1771662011139),
+
+    registration_certificate: getFile(f.UF_CRM_1772173338),
+    registration_validity: getString(f.UF_CRM_1771930261496),
+
+    government_id_aadhaar: getString(f.UF_CRM_1772173836),
+    government_id_pan: getString(f.UF_CRM_1772680990380),
+
+    cancelled_cheque_file: getFile(f.UF_CRM_1771310831682),
+    passport_photo: getFile(f.UF_CRM_1771993905808),
+
+    total_experience_years: getString(f.UF_CRM_1771662185420),
+    years_post_specialization: getString(f.UF_CRM_1771994050080),
+
+    current_employment_status: getString(f.UF_CRM_1771994164054),
+    current_hospital_attachments: getString(f.UF_CRM_1772174211),
+
+    license_number: getString(f.UF_CRM_1772875929385),
+
+    anaesthesiology: getString(f.UF_CRM_1772003543585),
+    optional_expertise: getString(f.UF_CRM_1772003562824),
+
+    availability_model: getString(f.UF_CRM_1772003669008),
+    booking_notice_preference: getString(f.UF_CRM_1772003726187),
+    emergency_on_call: getString(f.UF_CRM_1772003801842),
+
+    expected_charges_per_case: getString(f.UF_CRM_1771996004816),
+    emergency_charges: getString(f.UF_CRM_1771996029784),
+    minimum_guarantee_requirement: getString(f.UF_CRM_1771996137457),
+
+    account_number: getString(f.UF_CRM_1771310802862),
+    ifsc_code: getString(f.UF_CRM_1771310816536),
+    upi_id: getString(f.UF_CRM_1771996285556),
+
+    professional_indemnity_insurance: getString(f.UF_CRM_1771996440022),
+    insurance_provider: getString(f.UF_CRM_1771996479371),
+    policy_number: getString(f.UF_CRM_1771996518465),
+
+    upload_policy_copy: getFile(f.UF_CRM_1771996589920),
   };
 
-  console.log("Keys available in Result:", Object.keys(fields).filter(k => k.startsWith("UF_")));
+  console.log("✅ FINAL DOCTOR DATA:", doctorData);
 
+  // ==============================
+  // 🔥 SAVE / UPDATE
+  // ==============================
   let doctor = await Doctor.findOne({ deal_id: contactId });
+
   if (!doctor) {
-    const doctorCode = await generateDoctorCode();
-    doctor = await Doctor.create({ ...doctorData, doctor_code: doctorCode });
-    console.log(`🆕 Doctor (Contact) Registered: ${doctor.doctor_code}`);
+    const code = await generateDoctorCode();
+    doctor = await Doctor.create({ ...doctorData, doctor_code: code });
+    console.log("🆕 Doctor Created:", code);
   } else {
-    doctor = await Doctor.findOneAndUpdate({ deal_id: contactId }, { $set: doctorData }, { new: true });
-    console.log(`🔄 Doctor (Contact) Updated: ${doctor.doctor_code}`);
+    doctor = await Doctor.findOneAndUpdate(
+      { deal_id: contactId },
+      { $set: doctorData },
+      { new: true }
+    );
+    console.log("🔄 Doctor Updated:", doctor.doctor_code);
   }
 
-  return res.json(new ApiResponse(200, doctor, "Doctor Contact synced successfully"));
+  return res.json(
+    new ApiResponse(200, doctor, "Doctor synced successfully")
+  );
 });

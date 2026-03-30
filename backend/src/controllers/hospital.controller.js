@@ -60,7 +60,7 @@ export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
 
   console.log("🔥 WEBHOOK BODY:", JSON.stringify(req.body, null, 2));
 
-  // 🔐 Auth check
+  // 🔐 Auth
   if (req.body?.auth?.application_token !== AUTH_TOKEN) {
     throw new ApiError(403, "Unauthorized");
   }
@@ -74,7 +74,7 @@ export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
   console.log("📌 Deal ID:", dealId);
 
   // ==============================
-  // 🔥 STEP 1: GET DEAL
+  // 🔥 GET DEAL DATA
   // ==============================
   const dealRes = await axios.post(
     `${BITRIX_BASE_URL}/${DEAL_WEBHOOK}/crm.deal.get.json`,
@@ -90,37 +90,33 @@ export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
   console.log("📦 DEAL DATA:", JSON.stringify(deal, null, 2));
 
   // ==============================
-  // 🔥 STEP 2: CHECK DATA FILLED OR NOT
+  // 🔥 CHECK REQUIRED DATA
   // ==============================
   const isDataFilled =
-    deal.UF_CRM_1771309077241 ||  // GST
-    deal.UF_CRM_1771309063692 ||  // PAN
-    deal.UF_CRM_1771308871019;    // Registration
+    deal.UF_CRM_1771308871019 || // registration
+    deal.UF_CRM_1771309077241 || // GST
+    deal.UF_CRM_1771309063692;   // PAN
 
   if (!isDataFilled) {
-    console.log("⏳ Skipping - Data not filled yet");
+    console.log("⏳ Skipping - No data filled yet");
     return res.json({
       success: false,
-      message: "Waiting for full data (Deal Update required)",
+      message: "Waiting for deal update with data",
     });
   }
 
   // ==============================
-  // 🔥 STEP 3: MAP DATA
+  // 🔥 MAPPING (FINAL CORRECT)
   // ==============================
   const hospitalData = {
     deal_id: dealId,
 
-    hospital_name: getString(deal.TITLE),
+    hospital_name: getString(deal.UF_CRM_1772705782),
 
     registration_number: getString(deal.UF_CRM_1771308871019),
     issuing_authority: getString(deal.UF_CRM_1771913938636),
 
-    gstin: getString(deal.UF_CRM_1771309077241),
-    company_pan: getString(deal.UF_CRM_1771309063692),
-
-    address: getString(deal.UF_CRM_1771308900000), // ⚠️ replace if needed
-
+    address: getString(deal.UF_CRM_1771662561842),
     google_map_link: getString(deal.UF_CRM_1771308917041),
 
     total_beds: getNumber(deal.UF_CRM_1771308932424),
@@ -130,17 +126,23 @@ export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
     nabh_accredited: getString(deal.UF_CRM_1771308996541),
     ayushman_bharat_empanelled: getString(deal.UF_CRM_1771309017042),
 
+    company_pan: getString(deal.UF_CRM_1771309063692),
+    gstin: getString(deal.UF_CRM_1771309077241),
+
     bank_name: getString(deal.UF_CRM_1771310789378),
     account_number: getString(deal.UF_CRM_1771310802862),
     ifsc_code: getString(deal.UF_CRM_1771310816536),
 
-    agreement_upload: getString(deal.UF_CRM_177130986853),
+    // 🔥 FILE FIELD SAFE
+    agreement_upload: Array.isArray(deal.UF_CRM_1771310986853)
+      ? deal.UF_CRM_1771310986853[0]?.url || ""
+      : getString(deal.UF_CRM_1771310986853),
   };
 
   console.log("✅ FINAL DATA:", hospitalData);
 
   // ==============================
-  // 🔥 STEP 4: SAVE / UPDATE
+  // 🔥 SAVE / UPDATE
   // ==============================
   let hospital = await Hospital.findOne({ deal_id: dealId });
 
@@ -164,7 +166,7 @@ export const registerHospitalFromBitrix = asyncHandler(async (req, res) => {
   }
 
   // ==============================
-  // 🔥 STEP 5: UPDATE DEAL
+  // 🔥 UPDATE DEAL (Hospital Code)
   // ==============================
   if (!deal.UF_CRM_1771311033402) {
     console.log("📤 Updating Deal with Hospital Code...");
